@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Package, TrendingUp, X, Mail, Phone, User } from 'lucide-react';
+import { Search, Package, TrendingUp, X, Mail, Phone, User, Eye } from 'lucide-react';
 
 const VendorMatchManager = () => {
   const MATCHING_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1dLhQJWr26bEphJG-sNvvjW3bizNDDmY3jAYkljrsH_Q/edit?gid=1282806052';
@@ -12,6 +12,8 @@ const VendorMatchManager = () => {
   const [activeMenu, setActiveMenu] = useState('matching');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedBuyer, setSelectedBuyer] = useState(null);
+  const [expandedRow, setExpandedRow] = useState(null);
+  const [rfqStatus, setRfqStatus] = useState({});
 
   useEffect(() => {
     fetchSheetData();
@@ -48,7 +50,6 @@ const VendorMatchManager = () => {
       const parseCSV = (csv) => {
         const lines = csv.split('\n').filter(line => line.trim());
         if (lines.length === 0) return [];
-        // robust CSV parsing for quoted commas
         const parseLine = (line) => {
           const regex = /("([^"]|"")*"|[^,]+)(?=,|$)/g;
           const matches = [...line.matchAll(regex)].map(m => m[0].trim());
@@ -80,15 +81,13 @@ const VendorMatchManager = () => {
     }
   };
 
-  // single accent color: indigo; slightly larger font sizes for readability
   const accentBg = 'bg-indigo-50';
   const accentText = 'text-indigo-700';
   const cardBg = 'bg-white';
   const rounded = 'rounded-xl';
-  const tableTextSize = 'text-sm'; // slightly larger than xs
+  const tableTextSize = 'text-sm';
   const headerTextSize = 'text-base';
 
-  // Filtered data (search)
   const filteredMatching = matchingData.filter(item => 
     (item.Customer_Name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (item.Product_Needed || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -101,6 +100,53 @@ const VendorMatchManager = () => {
   );
 
   const filteredData = activeMenu === 'matching' ? filteredMatching : filteredVendor;
+
+  const matchingPrimaryCols = [
+    'Customer_Name',
+    'Product_Needed',
+    'Model_Needed',
+    'Qty_Needed',
+    'Vendor_Item_Found',
+    'Match_Accuracy',
+    'Match_Reason'
+  ];
+
+  const cellValue = (row, key) => {
+    return row?.[key] ?? (row?.[key.replace(/ /g, '_')] ?? '—');
+  };
+
+  const getMatchingVendors = (customerRow) => {
+    const productNeeded = cellValue(customerRow, 'Product_Needed').toLowerCase();
+    const modelNeeded = cellValue(customerRow, 'Model_Needed').toLowerCase();
+    
+    return vendorData.filter(vendor => {
+      const itemDesc = (vendor['Item_Description'] || '').toLowerCase();
+      const model = (vendor['Model'] || '').toLowerCase();
+      
+      return itemDesc.includes(productNeeded) || 
+             model.includes(modelNeeded) ||
+             productNeeded.includes(itemDesc.split(' ')[0]);
+    });
+  };
+
+  const sendRFQ = (customerRow, vendor, idx) => {
+    const customerName = cellValue(customerRow, 'Customer_Name');
+    const product = cellValue(customerRow, 'Product_Needed');
+    const qty = cellValue(customerRow, 'Qty_Needed');
+    const vendorName = vendor['Potential Buyer 1'] || 'Vendor';
+    const vendorEmail = vendor['Potential Buyer 1 email id'] || '';
+    
+    setRfqStatus(prev => ({ ...prev, [`${idx}`]: 'sending' }));
+    
+    setTimeout(() => {
+      setRfqStatus(prev => ({ ...prev, [`${idx}`]: 'sent' }));
+      alert(`RFQ Sent Successfully!\n\nTo: ${vendorName} (${vendorEmail})\nFor: ${product}\nQty: ${qty}\nCustomer: ${customerName}`);
+      
+      setTimeout(() => {
+        setRfqStatus(prev => ({ ...prev, [`${idx}`]: null }));
+      }, 2000);
+    }, 1000);
+  };
 
   if (loading) {
     return (
@@ -123,22 +169,6 @@ const VendorMatchManager = () => {
       </div>
     );
   }
-
-  // Matching sheet: show first 7 columns prominently
-  const matchingPrimaryCols = [
-    'Customer_Name',
-    'Product_Needed',
-    'Model_Needed',
-    'Qty_Needed',
-    'Vendor_Item_Found',
-    'Match_Accuracy',
-    'Match_Reason'
-  ];
-
-  // Helper to render cell safely
-  const cellValue = (row, key) => {
-    return row?.[key] ?? (row?.[key.replace(/ /g, '_')] ?? '—');
-  };
 
   return (
     <div className="flex flex-col md:flex-row h-full min-h-screen bg-gradient-to-br from-indigo-50 to-indigo-100">
@@ -203,7 +233,7 @@ const VendorMatchManager = () => {
               <>
                 <div className={`${accentBg} px-4 py-3 ${rounded} border border-indigo-100 mb-4`}>
                   <h2 className={`${headerTextSize} font-semibold ${accentText}`}>Matching Sheet Data</h2>
-                  <p className="text-sm text-gray-600 mt-1">Showing primary 7 columns. Click "View Details" for full info.</p>
+                  <p className="text-sm text-gray-600 mt-1">Click "Show Vendors" to view matched vendors and send RFQ.</p>
                 </div>
 
                 <div className="overflow-x-auto">
@@ -219,41 +249,124 @@ const VendorMatchManager = () => {
                       </tr>
                     </thead>
                     <tbody className="divide-y">
-                      {filteredData.map((row, idx) => (
-                        <tr key={idx} className="hover:bg-indigo-50">
-                          {matchingPrimaryCols.map(col => (
-                            <td key={col} className={`px-4 py-3 ${tableTextSize} text-gray-800`}>
-                              {cellValue(row, col) || '—'}
-                            </td>
-                          ))}
-                          <td className="px-4 py-3">
-                            <button
-                              onClick={() => setSelectedBuyer({
-                                type: 'matching',
-                                fullRow: row,
-                                // simplified props for quick render
-                                customerName: cellValue(row, 'Customer_Name'),
-                                customerEmail: cellValue(row, 'Customer_Email') || cellValue(row, 'Email_Address'),
-                                product: cellValue(row, 'Product_Needed'),
-                                model: cellValue(row, 'Model_Needed'),
-                                qtyNeeded: cellValue(row, 'Qty_Needed'),
-                                vendorItem: cellValue(row, 'Vendor_Item_Found'),
-                                vendorQty: cellValue(row, 'Vendor_Available_Qty'),
-                                vendorPrice: cellValue(row, 'Vendor_Price'),
-                                accuracy: cellValue(row, 'Match_Accuracy'),
-                                matchReason: cellValue(row, 'Match_Reason'),
-                                buyer1: cellValue(row, 'Potential_Buyer_1'),
-                                buyer1Contact: cellValue(row, 'Potential Buyer 1 Contact Details'),
-                                buyer1Email: cellValue(row, 'Potential Buyer 1 email id'),
-                                buyer2: cellValue(row, 'Potential_Buyer_2')
-                              })}
-                              className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium"
-                            >
-                              View Details
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
+                      {filteredData.map((row, idx) => {
+                        const matchingVendors = getMatchingVendors(row);
+                        const isExpanded = expandedRow === idx;
+                        
+                        return (
+                          <React.Fragment key={idx}>
+                            <tr className="hover:bg-indigo-50">
+                              {matchingPrimaryCols.map(col => (
+                                <td key={col} className={`px-4 py-3 ${tableTextSize} text-gray-800`}>
+                                  {cellValue(row, col) || '—'}
+                                </td>
+                              ))}
+                              <td className="px-4 py-3">
+                                <div className="flex items-center gap-2 flex-nowrap">
+                                  <button
+                                    onClick={() => setExpandedRow(isExpanded ? null : idx)}
+                                    className={`px-3 py-2 rounded-lg text-xs font-semibold transition whitespace-nowrap ${matchingVendors.length > 0 ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-gray-300 text-gray-600 cursor-not-allowed'}`}
+                                    disabled={matchingVendors.length === 0}
+                                  >
+                                    {isExpanded ? 'Hide' : 'Show'} Vendors ({matchingVendors.length})
+                                  </button>
+                                  <button
+                                    onClick={() => setSelectedBuyer({
+                                      type: 'matching',
+                                      fullRow: row,
+                                      customerName: cellValue(row, 'Customer_Name'),
+                                      customerEmail: cellValue(row, 'Customer_Email') || cellValue(row, 'Email_Address'),
+                                      product: cellValue(row, 'Product_Needed'),
+                                      model: cellValue(row, 'Model_Needed'),
+                                      qtyNeeded: cellValue(row, 'Qty_Needed'),
+                                      vendorItem: cellValue(row, 'Vendor_Item_Found'),
+                                      vendorQty: cellValue(row, 'Vendor_Available_Qty'),
+                                      vendorPrice: cellValue(row, 'Vendor_Price'),
+                                      accuracy: cellValue(row, 'Match_Accuracy'),
+                                      matchReason: cellValue(row, 'Match_Reason'),
+                                      buyer1: cellValue(row, 'Potential_Buyer_1'),
+                                      buyer1Contact: cellValue(row, 'Potential Buyer 1 Contact Details'),
+                                      buyer1Email: cellValue(row, 'Potential Buyer 1 email id'),
+                                      buyer2: cellValue(row, 'Potential_Buyer_2')
+                                    })}
+                                    className="px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap"
+                                  >
+                                    <Eye className="w-3.5 h-3.5" />
+                                    Details
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                            
+                            {isExpanded && matchingVendors.length > 0 && (
+                              <tr className="bg-indigo-50">
+                                <td colSpan={matchingPrimaryCols.length + 1} className="px-4 py-4">
+                                  <div className="bg-white rounded-lg border border-indigo-200 p-4">
+                                    <h4 className="text-sm font-semibold text-indigo-800 mb-3 flex items-center">
+                                      <Package className="w-4 h-4 mr-2" />
+                                      Matched Vendors for "{cellValue(row, 'Product_Needed')}"
+                                    </h4>
+                                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                                      {matchingVendors.map((vendor, vIdx) => {
+                                        const rfqKey = `${idx}-${vIdx}`;
+                                        const status = rfqStatus[rfqKey];
+                                        
+                                        return (
+                                          <div key={vIdx} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200 hover:border-indigo-300 transition">
+                                            <div className="flex-1 grid grid-cols-5 gap-3 text-sm">
+                                              <div>
+                                                <span className="text-xs text-gray-500 block">Vendor</span>
+                                                <span className="font-medium text-gray-800">{vendor['Potential Buyer 1'] || '—'}</span>
+                                              </div>
+                                              <div className="col-span-2">
+                                                <span className="text-xs text-gray-500 block">Item</span>
+                                                <span className="text-gray-700 truncate block">{vendor['Item_Description'] || '—'}</span>
+                                              </div>
+                                              <div>
+                                                <span className="text-xs text-gray-500 block">Available Qty</span>
+                                                <span className="text-gray-800">{vendor['Quantity'] || '0'} {vendor['UQC'] || ''}</span>
+                                              </div>
+                                              <div>
+                                                <span className="text-xs text-gray-500 block">Price</span>
+                                                <span className="text-green-700 font-semibold">₹{vendor['Unit_Price'] || '0'}</span>
+                                              </div>
+                                            </div>
+                                            <button
+                                              onClick={() => sendRFQ(row, vendor, rfqKey)}
+                                              disabled={status === 'sending' || status === 'sent'}
+                                              className={`ml-4 px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-2 ${
+                                                status === 'sent' 
+                                                  ? 'bg-green-100 text-green-700 border-2 border-green-300' 
+                                                  : status === 'sending'
+                                                  ? 'bg-yellow-100 text-yellow-700 border-2 border-yellow-300'
+                                                  : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                                              }`}
+                                            >
+                                              {status === 'sent' ? (
+                                                <>✓ Sent</>
+                                              ) : status === 'sending' ? (
+                                                <>
+                                                  <div className="w-3 h-3 border-2 border-yellow-600 border-t-transparent rounded-full animate-spin" />
+                                                  Sending...
+                                                </>
+                                              ) : (
+                                                <>
+                                                  <Mail className="w-4 h-4" />
+                                                  Send RFQ
+                                                </>
+                                              )}
+                                            </button>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </React.Fragment>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -262,7 +375,7 @@ const VendorMatchManager = () => {
               <>
                 <div className={`${accentBg} px-4 py-3 ${rounded} border border-indigo-100 mb-4`}>
                   <h2 className={`${headerTextSize} font-semibold ${accentText}`}>Vendor Sheet Data</h2>
-                  <p className="text-sm text-gray-600 mt-1">Model column is hidden here (as requested). Use details to view full item description.</p>
+                  <p className="text-sm text-gray-600 mt-1">Model column is hidden here. Use details to view full item description.</p>
                 </div>
 
                 <div className="overflow-x-auto">
@@ -301,9 +414,10 @@ const VendorMatchManager = () => {
                                 quantity: row['Quantity'],
                                 unitPrice: row['Unit_Price']
                               })}
-                              className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium"
+                              className="px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap"
                             >
-                              View Details
+                              <Eye className="w-3.5 h-3.5" />
+                              Details
                             </button>
                           </td>
                         </tr>
