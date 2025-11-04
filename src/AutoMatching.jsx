@@ -5,6 +5,8 @@ const VendorMatchManager = () => {
   const MATCHING_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1dLhQJWr26bEphJG-sNvvjW3bizNDDmY3jAYkljrsH_Q/edit?gid=1282806052';
   const VENDOR_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1dLhQJWr26bEphJG-sNvvjW3bizNDDmY3jAYkljrsH_Q/edit?gid=0';
   
+  const N8N_WEBHOOK_URL = 'https://n8n.avertisystems.com/webhook-test/e108b3c3-b298-4c6f-a112-5a857a01aeb3';
+  
   const [matchingData, setMatchingData] = useState([]);
   const [vendorData, setVendorData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -20,6 +22,8 @@ const VendorMatchManager = () => {
 
   useEffect(() => {
     fetchSheetData();
+    const interval = setInterval(fetchSheetData, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -101,6 +105,59 @@ const VendorMatchManager = () => {
     }
   };
 
+  const sendRFQ = async (customerRow, vendor, idx) => {
+    const customerName = cellValue(customerRow, 'Customer_Name');
+    const customerEmail = cellValue(customerRow, 'Customer_Email') || cellValue(customerRow, 'Email_Address');
+    const product = cellValue(customerRow, 'Product_Needed');
+    const model = cellValue(customerRow, 'Model_Needed');
+    const qty = cellValue(customerRow, 'Qty_Needed');
+    const vendorContact = vendor['Potential Buyer 1 Contact Details'] || '';
+    const vendorEmail = vendor['Potential Buyer 1 email id'] || '';
+    const vendorName = vendor['Potential Buyer 1'] || 'Vendor';
+    
+    if (!vendorContact || vendorContact === '—') {
+      alert('❌ Vendor contact number not available!');
+      return;
+    }
+    
+    setRfqStatus(prev => ({ ...prev, [idx]: 'sending' }));
+    
+    try {
+      const response = await fetch(N8N_WEBHOOK_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          customerName,
+          customerEmail,
+          productType: product,
+          model,
+          quantity: qty,
+          vendorContact,
+          vendorEmail,
+          vendorName
+        })
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        setRfqStatus(prev => ({ ...prev, [idx]: 'sent' }));
+        alert(`✅ RFQ Sent Successfully!\n\nTo: ${vendorName}\nContact: ${vendorContact}\n\nProduct: ${product}\nModel: ${model}\nQuantity: ${qty}\n\nVendor will receive WhatsApp message with customer details!`);
+        
+        setTimeout(() => {
+          setRfqStatus(prev => ({ ...prev, [idx]: null }));
+        }, 3000);
+      } else {
+        throw new Error('Failed to send RFQ');
+      }
+    } catch (error) {
+      console.error('Error sending RFQ:', error);
+      alert('❌ Failed to send RFQ. Please check:\n\n1. N8N webhook URL is correct\n2. N8N workflow is active\n3. Internet connection is stable\n\nTry again or contact support.');
+      setRfqStatus(prev => ({ ...prev, [idx]: null }));
+    }
+  };
+
   const filteredMatching = matchingData.filter(item => 
     (item.Customer_Name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (item.Product_Needed || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -152,25 +209,6 @@ const VendorMatchManager = () => {
     });
   };
 
-  const sendRFQ = (customerRow, vendor, idx) => {
-    const customerName = cellValue(customerRow, 'Customer_Name');
-    const product = cellValue(customerRow, 'Product_Needed');
-    const qty = cellValue(customerRow, 'Qty_Needed');
-    const vendorName = vendor['Potential Buyer 1'] || 'Vendor';
-    const vendorEmail = vendor['Potential Buyer 1 email id'] || '';
-    
-    setRfqStatus(prev => ({ ...prev, [idx]: 'sending' }));
-    
-    setTimeout(() => {
-      setRfqStatus(prev => ({ ...prev, [idx]: 'sent' }));
-      alert(`RFQ Sent Successfully!\n\nTo: ${vendorName} (${vendorEmail})\nFor: ${product}\nQty: ${qty}\nCustomer: ${customerName}`);
-      
-      setTimeout(() => {
-        setRfqStatus(prev => ({ ...prev, [idx]: null }));
-      }, 2000);
-    }, 1000);
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-indigo-100">
@@ -215,18 +253,6 @@ const VendorMatchManager = () => {
             <div>
               <h1 className="text-lg font-bold text-gray-900">Product Matching</h1>
               <p className="text-xs text-gray-500">Vendor & Matching</p>
-            </div>
-          </div>
-          <div className="lg:hidden">
-            <div className="relative w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <input
-                type="text"
-                placeholder={`Search in ${activeMenu === 'matching' ? 'Matching' : 'Vendor'} Sheet...`}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-3 py-2 border-2 border-indigo-100 rounded-lg text-sm focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 outline-none transition-all"
-              />
             </div>
           </div>
         </div>
@@ -284,7 +310,7 @@ const VendorMatchManager = () => {
       <main className="flex-1 flex flex-col overflow-hidden">
         <div className="p-3 bg-white border-b border-indigo-100 shadow-sm">
           <div className="flex items-center justify-center gap-4">
-            <div className="hidden lg:block flex-1 max-w-2xl">
+            <div className="flex-1 max-w-2xl">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <input
@@ -305,12 +331,12 @@ const VendorMatchManager = () => {
               <>
                 <div className="bg-gradient-to-r from-indigo-500 to-indigo-600 px-4 py-2 text-white">
                   <h2 className="text-base font-bold">Matching Sheet Data</h2>
-                  <p className="text-indigo-100 text-[10px] mt-1">Click "Show Vendors" to view matched vendors and send RFQ.</p>
+                  <p className="text-indigo-100 text-[10px] mt-1">Click "Vendor" button to view matched vendors and send RFQ via WhatsApp.</p>
                 </div>
 
                 <div className="overflow-x-auto flex-1">
                   <table className="w-full">
-                    <thead className="bg-indigo-50 border-b-2 border-indigo-200">
+                    <thead className="bg-indigo-50 border-b-2 border-indigo-200 sticky top-0">
                       <tr>
                         {matchingPrimaryCols.map(col => (
                           <th key={col} className="px-2 py-2 text-left font-bold text-indigo-700 uppercase tracking-wide text-[10px] whitespace-nowrap">
@@ -385,7 +411,7 @@ const VendorMatchManager = () => {
                                   <div className="bg-white rounded-xl border-2 border-indigo-200 p-4 shadow-lg">
                                     <h4 className="text-sm font-bold text-indigo-800 mb-3 flex items-center">
                                       <Package className="w-4 h-4 mr-2" />
-                                      Matched Vendors for "{cellValue(row, 'Product_Needed')}"
+                                      Matched Vendors for "{cellValue(row, 'Product_Needed')}" - Send RFQ via WhatsApp
                                     </h4>
                                     <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
                                       {matchingVendors.map((vendor, vIdx) => {
@@ -424,7 +450,7 @@ const VendorMatchManager = () => {
                                               }`}
                                             >
                                               {status === 'sent' ? (
-                                                <>✓ Sent</>
+                                                <>✓ RFQ Sent</>
                                               ) : status === 'sending' ? (
                                                 <>
                                                   <div className="w-3 h-3 border-2 border-yellow-600 border-t-transparent rounded-full animate-spin" />
@@ -680,51 +706,7 @@ const VendorMatchManager = () => {
                       )}
                     </div>
                   </>
-                ) : (
-                  <>
-                    <div className="p-5 rounded-xl border-2 border-indigo-200 bg-gradient-to-br from-indigo-50 to-blue-50 shadow-md">
-                      <div className="flex items-center mb-3">
-                        <Package className="w-5 h-5 text-indigo-600 mr-2" />
-                        <div className="text-xs text-indigo-700 font-bold uppercase tracking-wide">Vendor</div>
-                      </div>
-                      <div className="text-xl font-bold text-gray-900 mb-3">{selectedBuyer.name || '—'}</div>
-                      <div className="space-y-2">
-                        {selectedBuyer.email && (
-                          <div className="flex items-center text-sm text-gray-600 break-all">
-                            <Mail className="w-4 h-4 mr-2 text-indigo-500 flex-shrink-0" />
-                            {selectedBuyer.email}
-                          </div>
-                        )}
-                        {selectedBuyer.contact && (
-                          <div className="flex items-center text-sm text-gray-600">
-                            <Phone className="w-4 h-4 mr-2 text-indigo-500" />
-                            {selectedBuyer.contact}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="col-span-1 md:col-span-2 p-4 rounded-xl border-2 border-indigo-100 bg-white shadow-sm hover:shadow-md transition-shadow">
-                      <div className="text-xs text-indigo-700 font-bold uppercase tracking-wide mb-2">Item Description</div>
-                      <div className="text-base text-gray-800 leading-relaxed">{selectedBuyer.itemDesc || '—'}</div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4 col-span-1 md:col-span-3">
-                      <div className="p-4 rounded-xl border-2 border-indigo-100 bg-white shadow-sm hover:shadow-md transition-shadow">
-                        <div className="text-xs text-indigo-700 font-bold uppercase tracking-wide mb-2">Quantity</div>
-                        <div className="text-2xl font-bold text-gray-900">{selectedBuyer.quantity || '0'}</div>
-                      </div>
-                      <div className="p-4 rounded-xl border-2 border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 shadow-sm hover:shadow-md transition-shadow">
-                        <div className="text-xs text-green-700 font-bold uppercase tracking-wide mb-2">Unit Price</div>
-                        <div className="text-2xl font-bold text-green-700">₹{selectedBuyer.unitPrice || '0'}</div>
-                      </div>
-                      <div className="p-4 rounded-xl border-2 border-indigo-100 bg-white shadow-sm hover:shadow-md transition-shadow col-span-2">
-                        <div className="text-xs text-indigo-700 font-bold uppercase tracking-wide mb-2">UQC</div>
-                        <div className="text-base font-semibold text-gray-800">{selectedBuyer.uqc || '—'}</div>
-                      </div>
-                    </div>
-                  </>
-                )}
+                ) : null}
               </div>
             </div>
 
