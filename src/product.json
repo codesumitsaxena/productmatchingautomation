@@ -1,0 +1,359 @@
+{
+    "name": "Part 3 - FIXED Vendor Response Collection",
+    "nodes": [
+      {
+        "parameters": {
+          "updates": [
+            "messages"
+          ],
+          "options": {}
+        },
+        "type": "n8n-nodes-base.whatsAppTrigger",
+        "typeVersion": 1,
+        "position": [
+          240,
+          300
+        ],
+        "id": "vendor-trigger-001",
+        "name": "1. Vendor WhatsApp Trigger",
+        "webhookId": "vendor-response-webhook-456",
+        "credentials": {
+          "whatsAppTriggerApi": {
+            "id": "YOUR_WHATSAPP_TRIGGER_CREDENTIAL_ID",
+            "name": "WhatsApp OAuth account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "// Extract WhatsApp message data properly\nconst input = $input.first().json;\n\n// Try multiple possible paths for WhatsApp webhook data\nlet messageText = '';\nlet senderPhone = '';\nlet messageType = 'text';\n\ntry {\n  // Path 1: Direct messages array (most common)\n  if (input.messages && input.messages[0]) {\n    messageText = input.messages[0].text?.body || '';\n    senderPhone = input.messages[0].from || '';\n    messageType = input.messages[0].type || 'text';\n  }\n  // Path 2: Nested in body.entry\n  else if (input.body?.entry?.[0]?.changes?.[0]?.value?.messages?.[0]) {\n    const msg = input.body.entry[0].changes[0].value.messages[0];\n    messageText = msg.text?.body || '';\n    senderPhone = msg.from || '';\n    messageType = msg.type || 'text';\n  }\n  // Path 3: Direct entry array\n  else if (input.entry?.[0]?.changes?.[0]?.value?.messages?.[0]) {\n    const msg = input.entry[0].changes[0].value.messages[0];\n    messageText = msg.text?.body || '';\n    senderPhone = msg.from || '';\n    messageType = msg.type || 'text';\n  }\n  // Path 4: Webhook event format\n  else if (input.event?.messages?.[0]) {\n    messageText = input.event.messages[0].text?.body || '';\n    senderPhone = input.event.messages[0].from || '';\n    messageType = input.event.messages[0].type || 'text';\n  }\n\n  // Handle image messages\n  if (messageType === 'image') {\n    messageText = '[User sent an image]';\n  }\n\n  // Handle other media types\n  if (messageType === 'document') {\n    messageText = '[User sent a document]';\n  }\n\n  if (!messageText && !senderPhone) {\n    throw new Error('Could not extract message data from webhook');\n  }\n\n  return {\n    chatInput: messageText || 'Hello',\n    vendorPhone: senderPhone,\n    messageType: messageType,\n    originalPayload: input\n  };\n\n} catch (error) {\n  console.error('Message extraction error:', error);\n  \n  return {\n    chatInput: 'Hello',\n    vendorPhone: 'unknown',\n    messageType: 'text',\n    error: error.message,\n    originalPayload: input\n  };\n}"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          460,
+          300
+        ],
+        "id": "vendor-format-input",
+        "name": "1A. Format WhatsApp Input"
+      },
+      {
+        "parameters": {
+          "promptType": "define",
+          "text": "={{ $json.chatInput }}",
+          "options": {
+            "systemMessage": "You are collecting vendor response for an RFQ. Collect 5 details in order:\n\n## COLLECT THESE 5 DETAILS (ONE AT A TIME):\n1. Product Available? (YES/NO)\n2. Current Price (if YES)\n3. Available Quantity (if YES)\n4. Can Deliver to Address? (YES/NO)\n5. Photo Received? (YES/NO - or detect if image sent)\n\n## CONVERSATION FLOW:\n\n**Start:** Vendor already received RFQ. First message should be YES or NO.\n\n**If NO:**\n\"Thank you for your response. We'll keep you updated on future requirements!\"\nDATA_START{\"product_available\":\"NO\",\"vendor_price\":\"N/A\",\"available_qty\":\"0\",\"can_deliver\":\"NO\",\"photo_received\":\"NO\"}DATA_END\n\n**If YES:**\n\"Great! What's your current price for this item?\"\n\n**After Price:**\n\"Perfect! How many units do you have available?\"\n\n**After Quantity:**\n\"Can you deliver to the specified address?\"\n\n**After Delivery Confirmation:**\n\"Excellent! Can you send a photo of the product?\"\n\n**After Photo (FINAL STEP):**\n\"Thank you! ✅ All information collected. We'll contact you soon with next steps.\"\n\nDATA_START{\"product_available\":\"YES\",\"vendor_price\":\"[price]\",\"available_qty\":\"[qty]\",\"can_deliver\":\"[yes/no]\",\"photo_received\":\"[yes/no]\"}DATA_END\n\n## RULES:\n✅ Ask ONE question at a time\n✅ If user says \"[User sent an image]\" for photo question, mark photo_received as YES\n✅ If vendor says NO to availability, end conversation politely\n✅ Accept price in any format (₹50000, 50k, 50000 INR, etc)\n✅ Accept quantity as just numbers or with units\n✅ Detect image uploads automatically for photo confirmation\n✅ Keep messages under 2 sentences\n✅ Be professional and brief\n✅ After final detail, ALWAYS send confirmation BEFORE DATA_START\n\nKeep it professional and efficient!"
+          }
+        },
+        "type": "@n8n/n8n-nodes-langchain.agent",
+        "typeVersion": 2,
+        "position": [
+          680,
+          300
+        ],
+        "id": "vendor-ai-agent-001",
+        "name": "2. Vendor AI Agent"
+      },
+      {
+        "parameters": {
+          "jsCode": "function extractVendorInfo(chatResponse, whatsappNumber) {\n  try {\n    const dataPattern = /DATA_START\\s*({[\\s\\S]*?})\\s*DATA_END/i;\n    const match = chatResponse.match(dataPattern);\n    let cleanResponse = chatResponse;\n    \n    if (match) {\n      cleanResponse = chatResponse.replace(dataPattern, '').trim();\n    }\n    \n    if (!match) {\n      return {\n        success: false,\n        error: \"No data found. Collection incomplete.\",\n        vendorMessage: cleanResponse,\n        vendorPhone: whatsappNumber,\n        rawResponse: chatResponse\n      };\n    }\n    \n    let data;\n    try {\n      data = JSON.parse(match[1]);\n    } catch (parseError) {\n      return {\n        success: false,\n        error: \"JSON parsing failed: \" + parseError.message,\n        vendorMessage: cleanResponse,\n        vendorPhone: whatsappNumber,\n        rawResponse: chatResponse\n      };\n    }\n    \n    const requiredFields = ['product_available'];\n    const missingFields = requiredFields.filter(field => !data[field]);\n    \n    if (missingFields.length > 0) {\n      return {\n        success: false,\n        error: \"Missing required fields: \" + missingFields.join(', '),\n        vendorMessage: cleanResponse,\n        vendorPhone: whatsappNumber,\n        rawResponse: chatResponse\n      };\n    }\n    \n    const now = new Date();\n    const indianTime = now.toLocaleString('en-IN', {\n      timeZone: 'Asia/Kolkata',\n      day: '2-digit',\n      month: '2-digit',\n      year: 'numeric',\n      hour: '2-digit',\n      minute: '2-digit',\n      second: '2-digit',\n      hour12: false\n    });\n    \n    let priceValue = data.vendor_price || 'N/A';\n    if (priceValue !== 'N/A') {\n      priceValue = String(priceValue).replace(/[^0-9.]/g, '');\n    }\n    \n    const vendorData = {\n      Product_Available: data.product_available.toUpperCase(),\n      Vendor_Price: priceValue,\n      Available_Qty: data.available_qty || '0',\n      Can_Deliver: (data.can_deliver || 'NO').toUpperCase(),\n      Photo_Received: (data.photo_received || 'NO').toUpperCase(),\n      Vendor_Phone: whatsappNumber,\n      Response_Date: indianTime,\n      Final_Status: data.product_available.toUpperCase() === 'YES' \n        ? 'Vendor Responded - Available' \n        : 'Vendor Responded - Not Available'\n    };\n    \n    return {\n      success: true,\n      data: vendorData,\n      message: \"Vendor info extracted successfully\",\n      vendorMessage: cleanResponse,\n      vendorPhone: whatsappNumber\n    };\n    \n  } catch (error) {\n    return {\n      success: false,\n      error: \"Extraction failed: \" + error.message,\n      vendorMessage: chatResponse,\n      vendorPhone: whatsappNumber\n    };\n  }\n}\n\nlet chatResponse = \"\";\nlet whatsappNumber = \"\";\n\ntry {\n  const aiOutput = $input.first().json;\n  chatResponse = aiOutput.output || aiOutput.text || aiOutput.message || \"\";\n  \n  const formatNode = $('1A. Format WhatsApp Input').first().json;\n  whatsappNumber = formatNode.vendorPhone || \"\";\n  \n  if (!chatResponse) {\n    return {\n      success: false,\n      error: \"No chat response found from Vendor AI Agent\",\n      vendorMessage: \"Sorry, there was an error processing your response.\",\n      vendorPhone: whatsappNumber || \"unknown\"\n    };\n  }\n  \n  if (!whatsappNumber) {\n    return {\n      success: false,\n      error: \"No WhatsApp number found from vendor trigger\",\n      vendorMessage: chatResponse\n    };\n  }\n  \n} catch (e) {\n  return {\n    success: false,\n    error: \"Input detection failed: \" + e.message,\n    vendorMessage: \"Sorry, there was an error processing your response.\"\n  };\n}\n\nconst result = extractVendorInfo(chatResponse, whatsappNumber);\nreturn result;"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          900,
+          300
+        ],
+        "id": "vendor-extract-001",
+        "name": "3. Extract Vendor Data"
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 1
+            },
+            "conditions": [
+              {
+                "id": "vendor-complete-check",
+                "leftValue": "={{ $json.success }}",
+                "rightValue": true,
+                "operator": {
+                  "type": "boolean",
+                  "operation": "equals"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2,
+        "position": [
+          1120,
+          300
+        ],
+        "id": "vendor-check-001",
+        "name": "4. Check Vendor Data Complete"
+      },
+      {
+        "parameters": {
+          "documentId": {
+            "__rl": true,
+            "value": "1dLhQJWr26bEphJG-sNvvjW3bizNDDmY3jAYkljrsH_Q",
+            "mode": "list",
+            "cachedResultName": "ProductManagementData"
+          },
+          "sheetName": {
+            "__rl": true,
+            "value": 1282806052,
+            "mode": "list",
+            "cachedResultName": "Matched_Requirements"
+          },
+          "filtersUI": {
+            "values": [
+              {
+                "lookupColumn": "Potential Buyer 1 Contact Details",
+                "lookupValue": "={{ $json.data.Vendor_Phone }}"
+              }
+            ]
+          },
+          "options": {
+            "returnAllMatches": "firstMatch"
+          }
+        },
+        "type": "n8n-nodes-base.googleSheets",
+        "typeVersion": 4.6,
+        "position": [
+          1340,
+          300
+        ],
+        "id": "vendor-lookup-001",
+        "name": "5. Find Match by Vendor Phone",
+        "credentials": {
+          "googleSheetsOAuth2Api": {
+            "id": "YOUR_GOOGLE_SHEETS_CREDENTIAL_ID",
+            "name": "Google Sheets account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "operation": "appendOrUpdate",
+          "documentId": {
+            "__rl": true,
+            "value": "1dLhQJWr26bEphJG-sNvvjW3bizNDDmY3jAYkljrsH_Q",
+            "mode": "list",
+            "cachedResultName": "ProductManagementData"
+          },
+          "sheetName": {
+            "__rl": true,
+            "value": 1282806052,
+            "mode": "list",
+            "cachedResultName": "Matched_Requirements"
+          },
+          "columns": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "Match_ID": "={{ $json.Match_ID }}",
+              "Product_available": "={{ $('3. Extract Vendor Data').first().json.data.Product_Available }}",
+              "Vendor Price": "={{ $('3. Extract Vendor Data').first().json.data.Vendor_Price }}",
+              "Available_Qty": "={{ $('3. Extract Vendor Data').first().json.data.Available_Qty }}",
+              "Can_Deliver": "={{ $('3. Extract Vendor Data').first().json.data.Can_Deliver }}",
+              "Photo_Received": "={{ $('3. Extract Vendor Data').first().json.data.Photo_Received }}",
+              "Final_Status": "={{ $('3. Extract Vendor Data').first().json.data.Final_Status }}"
+            },
+            "matchingColumns": [
+              "Match_ID"
+            ],
+            "attemptToConvertTypes": false,
+            "convertFieldsToString": false
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.googleSheets",
+        "typeVersion": 4.6,
+        "position": [
+          1580,
+          300
+        ],
+        "id": "vendor-update-001",
+        "name": "6. Update Vendor Response",
+        "credentials": {
+          "googleSheetsOAuth2Api": {
+            "id": "YOUR_GOOGLE_SHEETS_CREDENTIAL_ID",
+            "name": "Google Sheets account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "operation": "send",
+          "phoneNumberId": "867241513133213",
+          "recipientPhoneNumber": "={{ $json.vendorPhone }}",
+          "textBody": "={{ $json.vendorMessage }}",
+          "additionalFields": {}
+        },
+        "type": "n8n-nodes-base.whatsApp",
+        "typeVersion": 1,
+        "position": [
+          1120,
+          480
+        ],
+        "id": "vendor-error-msg-001",
+        "name": "7. Send Vendor Error Message",
+        "webhookId": "vendor-error-wa",
+        "credentials": {
+          "whatsAppApi": {
+            "id": "YOUR_WHATSAPP_API_CREDENTIAL_ID",
+            "name": "WhatsApp account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "modelName": "models/gemini-2.0-flash",
+          "options": {}
+        },
+        "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+        "typeVersion": 1,
+        "position": [
+          580,
+          520
+        ],
+        "id": "vendor-gemini-001",
+        "name": "Vendor Gemini Model",
+        "credentials": {
+          "googlePalmApi": {
+            "id": "YOUR_GEMINI_API_CREDENTIAL_ID",
+            "name": "Google Gemini API account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "sessionIdType": "customKey",
+          "sessionKey": "={{ $('1A. Format WhatsApp Input').first().json.vendorPhone }}",
+          "contextWindowLength": 20
+        },
+        "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+        "typeVersion": 1.3,
+        "position": [
+          800,
+          520
+        ],
+        "id": "vendor-memory-001",
+        "name": "Vendor Memory"
+      }
+    ],
+    "connections": {
+      "1. Vendor WhatsApp Trigger": {
+        "main": [
+          [
+            {
+              "node": "1A. Format WhatsApp Input",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "1A. Format WhatsApp Input": {
+        "main": [
+          [
+            {
+              "node": "2. Vendor AI Agent",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "2. Vendor AI Agent": {
+        "main": [
+          [
+            {
+              "node": "3. Extract Vendor Data",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "3. Extract Vendor Data": {
+        "main": [
+          [
+            {
+              "node": "4. Check Vendor Data Complete",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "4. Check Vendor Data Complete": {
+        "main": [
+          [
+            {
+              "node": "5. Find Match by Vendor Phone",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "7. Send Vendor Error Message",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "5. Find Match by Vendor Phone": {
+        "main": [
+          [
+            {
+              "node": "6. Update Vendor Response",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Vendor Gemini Model": {
+        "ai_languageModel": [
+          [
+            {
+              "node": "2. Vendor AI Agent",
+              "type": "ai_languageModel",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Vendor Memory": {
+        "ai_memory": [
+          [
+            {
+              "node": "2. Vendor AI Agent",
+              "type": "ai_memory",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "pinData": {},
+    "settings": {
+      "executionOrder": "v1"
+    },
+    "staticData": null,
+    "tags": [],
+    "triggerCount": 1,
+    "updatedAt": "2024-01-01T00:00:00.000Z",
+    "versionId": "1"
+  }
