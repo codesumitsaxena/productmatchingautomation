@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Search, Package, TrendingUp, X, Mail, Phone, User, Eye, ChevronLeft, ChevronRight, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Search, Package, TrendingUp, X, Mail, Eye, CheckCircle, Clock, AlertCircle, User, ShoppingBag } from 'lucide-react';
 
 // ============================================
 // 1. VENDOR RESPONSE MODAL COMPONENT
@@ -12,7 +12,6 @@ const VendorResponseModal = ({ isOpen, onClose, vendorData, matchData }) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 backdrop-blur-sm">
       <div className="relative max-w-4xl w-full bg-white rounded-2xl shadow-2xl border-2 border-indigo-200 overflow-hidden max-h-[90vh] flex flex-col">
-        {/* Header */}
         <div className="sticky top-0 z-10 flex items-center justify-between p-4 md:p-6 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white">
           <div className="flex items-center">
             <div className="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-3">
@@ -31,9 +30,7 @@ const VendorResponseModal = ({ isOpen, onClose, vendorData, matchData }) => {
           </button>
         </div>
 
-        {/* Content */}
         <div className="flex-1 overflow-y-auto p-4 md:p-6">
-          {/* RFQ Details */}
           <div className="mb-6 p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border-2 border-indigo-200">
             <h4 className="text-sm font-bold text-indigo-800 mb-3 flex items-center">
               <Mail className="w-4 h-4 mr-2" />
@@ -53,10 +50,6 @@ const VendorResponseModal = ({ isOpen, onClose, vendorData, matchData }) => {
                 <span className="font-semibold text-gray-900">{matchData?.product || '—'}</span>
               </div>
               <div>
-                <span className="text-xs text-gray-600 block mb-1">Model</span>
-                <span className="font-semibold text-gray-900">{matchData?.model || '—'}</span>
-              </div>
-              <div>
                 <span className="text-xs text-gray-600 block mb-1">Quantity Needed</span>
                 <span className="font-semibold text-gray-900">{matchData?.quantity || '—'}</span>
               </div>
@@ -64,17 +57,15 @@ const VendorResponseModal = ({ isOpen, onClose, vendorData, matchData }) => {
                 <span className="text-xs text-gray-600 block mb-1">Vendor</span>
                 <span className="font-semibold text-gray-900">{matchData?.vendorName || '—'}</span>
               </div>
-              <div className="sm:col-span-2">
+              <div>
                 <span className="text-xs text-gray-600 block mb-1">Vendor Contact</span>
                 <span className="font-semibold text-gray-900">{matchData?.vendorContact || '—'}</span>
               </div>
             </div>
           </div>
 
-          {/* Vendor Response Status */}
           {hasResponse ? (
             <div className="space-y-4">
-              {/* Status Indicator */}
               <div className={`p-4 rounded-xl border-2 ${
                 vendorData.Product_Available === 'YES' 
                   ? 'bg-green-50 border-green-300' 
@@ -98,23 +89,18 @@ const VendorResponseModal = ({ isOpen, onClose, vendorData, matchData }) => {
 
                 {vendorData.Product_Available === 'YES' && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                    {/* Vendor Price */}
                     <div className="p-3 bg-white rounded-lg border border-gray-200">
                       <div className="text-xs text-gray-600 mb-1">Vendor Price</div>
                       <div className="text-xl font-bold text-green-600">
                         ₹{vendorData.Vendor_Price || '—'}
                       </div>
                     </div>
-
-                    {/* Available Quantity */}
                     <div className="p-3 bg-white rounded-lg border border-gray-200">
                       <div className="text-xs text-gray-600 mb-1">Available Qty</div>
                       <div className="text-xl font-bold text-indigo-600">
                         {vendorData.Available_Qty || '—'}
                       </div>
                     </div>
-
-                    {/* Can Deliver */}
                     <div className="p-3 bg-white rounded-lg border border-gray-200">
                       <div className="text-xs text-gray-600 mb-1">Can Deliver</div>
                       <div className={`text-base font-bold ${
@@ -123,8 +109,6 @@ const VendorResponseModal = ({ isOpen, onClose, vendorData, matchData }) => {
                         {vendorData.Can_Deliver || '—'}
                       </div>
                     </div>
-
-                    {/* Photo Received */}
                     <div className="p-3 bg-white rounded-lg border border-gray-200">
                       <div className="text-xs text-gray-600 mb-1">Photo</div>
                       <div className={`text-base font-bold ${
@@ -137,7 +121,6 @@ const VendorResponseModal = ({ isOpen, onClose, vendorData, matchData }) => {
                 )}
               </div>
 
-              {/* Status Timeline */}
               <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
                 <h4 className="text-sm font-bold text-gray-800 mb-3">Response Status</h4>
                 <div className="space-y-2 text-sm">
@@ -169,7 +152,6 @@ const VendorResponseModal = ({ isOpen, onClose, vendorData, matchData }) => {
               </div>
             </div>
           ) : (
-            // No Response Yet
             <div className="p-8 text-center bg-gray-50 rounded-xl border-2 border-dashed border-gray-300">
               <Clock className="w-12 h-12 text-gray-400 mx-auto mb-3" />
               <h4 className="text-lg font-bold text-gray-700 mb-2">Awaiting Vendor Response</h4>
@@ -180,7 +162,6 @@ const VendorResponseModal = ({ isOpen, onClose, vendorData, matchData }) => {
           )}
         </div>
 
-        {/* Footer */}
         <div className="sticky bottom-0 p-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-3">
           <button 
             onClick={onClose} 
@@ -197,33 +178,46 @@ const VendorResponseModal = ({ isOpen, onClose, vendorData, matchData }) => {
 // ============================================
 // 2. VENDOR ROW COMPONENT
 // ============================================
-const VendorRow = ({ vendor, customerRow, rfqKey, onSendRFQ, rfqStatus, onViewResponse }) => {
+const VendorRow = ({ vendor, onSendRFQ, rfqStatus, onViewResponse, isSelected, onToggleSelect }) => {
+  const rfqKey = `${vendor.matchID}-${vendor.name}`;
   const status = rfqStatus[rfqKey];
 
   return (
     <div className="flex flex-col lg:flex-row lg:items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-200 hover:border-indigo-300 hover:shadow-md transition-all gap-3">
-      <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
-        <div>
-          <span className="text-[10px] text-gray-500 block font-semibold mb-1">Vendor</span>
-          <span className="font-bold text-gray-800">{vendor['Potential Buyer 1'] || '—'}</span>
-        </div>
-        <div className="sm:col-span-2 lg:col-span-2">
-          <span className="text-[10px] text-gray-500 block font-semibold mb-1">Item</span>
-          <span className="text-gray-700 line-clamp-2">{vendor['Item_Description'] || '—'}</span>
-        </div>
-        <div>
-          <span className="text-[10px] text-gray-500 block font-semibold mb-1">Available Qty</span>
-          <span className="text-gray-800 font-medium">{vendor['Quantity'] || '0'} {vendor['UQC'] || ''}</span>
-        </div>
-        <div>
-          <span className="text-[10px] text-gray-500 block font-semibold mb-1">Price</span>
-          <span className="text-green-700 font-bold text-sm">₹{vendor['Unit_Price'] || '0'}</span>
+      <div className="flex items-center gap-3 flex-1">
+        <input
+          type="checkbox"
+          checked={isSelected}
+          onChange={onToggleSelect}
+          className="w-5 h-5 rounded border-gray-300 text-indigo-600 focus:ring-2 focus:ring-indigo-500"
+        />
+        <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
+          <div>
+            <span className="text-[10px] text-gray-500 block font-semibold mb-1">Match ID</span>
+            <span className="font-bold text-indigo-600 text-[11px]">{vendor.matchID || '—'}</span>
+          </div>
+          <div>
+            <span className="text-[10px] text-gray-500 block font-semibold mb-1">Vendor</span>
+            <span className="font-bold text-gray-800">{vendor.name || '—'}</span>
+          </div>
+          <div className="sm:col-span-2 lg:col-span-1">
+            <span className="text-[10px] text-gray-500 block font-semibold mb-1">Item</span>
+            <span className="text-gray-700 line-clamp-2">{vendor.itemDescription || '—'}</span>
+          </div>
+          <div>
+            <span className="text-[10px] text-gray-500 block font-semibold mb-1">Available Qty</span>
+            <span className="text-gray-800 font-medium">{vendor.quantity || '0'} {vendor.uqc || ''}</span>
+          </div>
+          <div>
+            <span className="text-[10px] text-gray-500 block font-semibold mb-1">Price</span>
+            <span className="text-green-700 font-bold text-sm">₹{vendor.price || '0'}</span>
+          </div>
         </div>
       </div>
       
       <div className="flex gap-2">
         <button
-          onClick={() => onSendRFQ(customerRow, vendor, rfqKey)}
+          onClick={() => onSendRFQ(vendor, rfqKey)}
           disabled={status === 'sending' || status === 'sent'}
           className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-md whitespace-nowrap ${
             status === 'sent' 
@@ -249,7 +243,7 @@ const VendorRow = ({ vendor, customerRow, rfqKey, onSendRFQ, rfqStatus, onViewRe
         </button>
 
         <button
-          onClick={() => onViewResponse(rfqKey, customerRow, vendor)}
+          onClick={() => onViewResponse(vendor)}
           className="px-4 py-2 rounded-xl text-xs font-bold bg-purple-600 text-white hover:bg-purple-700 shadow-md hover:shadow-lg transform hover:scale-105 transition-all flex items-center gap-2 whitespace-nowrap"
         >
           <Eye className="w-3 h-3" />
@@ -272,26 +266,18 @@ const VendorMatchManager = () => {
   const [vendorData, setVendorData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [activeMenu, setActiveMenu] = useState('matching');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedBuyer, setSelectedBuyer] = useState(null);
   const [expandedRow, setExpandedRow] = useState(null);
   const [rfqStatus, setRfqStatus] = useState({});
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
   const [newEntries, setNewEntries] = useState(new Set());
   const [vendorResponseModal, setVendorResponseModal] = useState({ isOpen: false, data: null, matchData: null });
+  const [activeTab, setActiveTab] = useState('matching');
+  const [selectedVendors, setSelectedVendors] = useState({});
 
   useEffect(() => {
     fetchSheetData();
-    // Auto-refresh every 30 seconds
-    const interval = setInterval(fetchSheetData, 30000);
-    return () => clearInterval(interval);
   }, []);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [activeMenu, searchTerm]);
 
   const parseGoogleSheetUrl = (url) => {
     const match = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
@@ -313,14 +299,6 @@ const VendorMatchManager = () => {
     }
 
     try {
-      const matchingUrl = `https://docs.google.com/spreadsheets/d/${matchingInfo.sheetId}/gviz/tq?tqx=out:csv&gid=${matchingInfo.gid}`;
-      const matchingRes = await fetch(matchingUrl);
-      const matchingCsv = await matchingRes.text();
-      
-      const vendorUrl = `https://docs.google.com/spreadsheets/d/${vendorInfo.sheetId}/gviz/tq?tqx=out:csv&gid=${vendorInfo.gid}`;
-      const vendorRes = await fetch(vendorUrl);
-      const vendorCsv = await vendorRes.text();
-      
       const parseCSV = (csv) => {
         const lines = csv.split('\n').filter(line => line.trim());
         if (lines.length === 0) return [];
@@ -344,9 +322,19 @@ const VendorMatchManager = () => {
           return obj;
         }).filter(r => Object.keys(r).length > 0);
       };
-      
+
+      // Fetch matching sheet
+      const matchingUrl = `https://docs.google.com/spreadsheets/d/${matchingInfo.sheetId}/gviz/tq?tqx=out:csv&gid=${matchingInfo.gid}`;
+      const matchingRes = await fetch(matchingUrl);
+      const matchingCsv = await matchingRes.text();
       const parsedMatching = parseCSV(matchingCsv);
       const reversedData = parsedMatching.reverse();
+
+      // Fetch vendor sheet
+      const vendorUrl = `https://docs.google.com/spreadsheets/d/${vendorInfo.sheetId}/gviz/tq?tqx=out:csv&gid=${vendorInfo.gid}`;
+      const vendorRes = await fetch(vendorUrl);
+      const vendorCsv = await vendorRes.text();
+      const parsedVendor = parseCSV(vendorCsv);
 
       if (matchingData.length > 0 && reversedData.length > matchingData.length) {
         const newIds = new Set();
@@ -359,7 +347,7 @@ const VendorMatchManager = () => {
       }
 
       setMatchingData(reversedData);
-      setVendorData(parseCSV(vendorCsv));
+      setVendorData(parsedVendor);
       setLoading(false);
     } catch (err) {
       console.error(err);
@@ -368,19 +356,141 @@ const VendorMatchManager = () => {
     }
   };
 
-  const sendRFQ = async (customerRow, vendor, rfqKey) => {
-    const customerName = cellValue(customerRow, 'Customer_Name');
-    const customerEmail = cellValue(customerRow, 'Customer_Email') || cellValue(customerRow, 'Email_Address');
-    const customerAddress = cellValue(customerRow, 'Customer_Address');
-    const product = cellValue(customerRow, 'Product_Needed');
-    const model = cellValue(customerRow, 'Model_Needed');
-    const qty = cellValue(customerRow, 'Qty_Needed');
-    const matchID = cellValue(customerRow, 'Match_ID');
-    const vendorContact = vendor['Potential Buyer 1 Contact Details'] || '';
-    const vendorEmail = vendor['Potential Buyer 1 email id'] || '';
-    const vendorName = vendor['Potential Buyer 1'] || 'Vendor';
-    
-    if (!vendorContact || vendorContact === '—') {
+  const cellValue = (row, key) => {
+    return row?.[key] ?? (row?.[key.replace(/ /g, '_')] ?? '—');
+  };
+
+  const sendAllRFQ = async (vendors) => {
+    if (vendors.length === 0) {
+      alert('❌ No vendors found!');
+      return;
+    }
+
+    const firstVendor = vendors[0];
+    const confirmMsg = `Send RFQ to ${vendors.length} vendor(s)?\n\nProduct: ${firstVendor.product}\nModel: ${firstVendor.model}\nQuantity: ${firstVendor.quantity}`;
+    if (!window.confirm(confirmMsg)) return;
+
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const vendor of vendors) {
+      if (!vendor.contact || vendor.contact === '—') {
+        failCount++;
+        continue;
+      }
+
+      const rfqKey = `${vendor.matchID}-${vendor.name}`;
+      setRfqStatus(prev => ({ ...prev, [rfqKey]: 'sending' }));
+      
+      try {
+        const response = await fetch(N8N_WEBHOOK_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            matchID: vendor.matchID,
+            customerName: vendor.customerName,
+            customerEmail: vendor.customerEmail,
+            customerAddress: vendor.customerAddress,
+            productType: vendor.product,
+            model: vendor.model,
+            quantity: vendor.quantity,
+            vendorContact: vendor.contact,
+            vendorEmail: vendor.email || '',
+            vendorName: vendor.name
+          })
+        });
+        
+        if (response.ok) {
+          successCount++;
+          setRfqStatus(prev => ({ ...prev, [rfqKey]: 'sent' }));
+        } else {
+          failCount++;
+          setRfqStatus(prev => ({ ...prev, [rfqKey]: null }));
+        }
+      } catch (error) {
+        console.error('Error sending RFQ to:', vendor.name, error);
+        failCount++;
+        setRfqStatus(prev => ({ ...prev, [rfqKey]: null }));
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+
+    alert(`✅ RFQ Sending Complete!\n\n✓ Success: ${successCount}\n✗ Failed: ${failCount}`);
+    setTimeout(() => {
+      setRfqStatus({});
+    }, 3000);
+  };
+
+  const sendSelectedRFQ = async (vendors) => {
+    if (vendors.length === 0) {
+      alert('❌ No vendors selected!');
+      return;
+    }
+
+    const firstVendor = vendors[0];
+    const confirmMsg = `Send RFQ to ${vendors.length} selected vendor(s)?\n\nProduct: ${firstVendor.product}\nModel: ${firstVendor.model}\nQuantity: ${firstVendor.quantity}`;
+    if (!window.confirm(confirmMsg)) return;
+
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const vendor of vendors) {
+      if (!vendor.contact || vendor.contact === '—') {
+        failCount++;
+        continue;
+      }
+
+      const rfqKey = `${vendor.matchID}-${vendor.name}`;
+      setRfqStatus(prev => ({ ...prev, [rfqKey]: 'sending' }));
+      
+      try {
+        const response = await fetch(N8N_WEBHOOK_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            matchID: vendor.matchID,
+            customerName: vendor.customerName,
+            customerEmail: vendor.customerEmail,
+            customerAddress: vendor.customerAddress,
+            productType: vendor.product,
+            model: vendor.model,
+            quantity: vendor.quantity,
+            vendorContact: vendor.contact,
+            vendorEmail: vendor.email || '',
+            vendorName: vendor.name
+          })
+        });
+        
+        if (response.ok) {
+          successCount++;
+          setRfqStatus(prev => ({ ...prev, [rfqKey]: 'sent' }));
+        } else {
+          failCount++;
+          setRfqStatus(prev => ({ ...prev, [rfqKey]: null }));
+        }
+      } catch (error) {
+        console.error('Error sending RFQ to:', vendor.name, error);
+        failCount++;
+        setRfqStatus(prev => ({ ...prev, [rfqKey]: null }));
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+
+    alert(`✅ RFQ Sending Complete!\n\n✓ Success: ${successCount}\n✗ Failed: ${failCount}`);
+    setSelectedVendors({});
+    setTimeout(() => {
+      setRfqStatus({});
+    }, 3000);
+  };
+
+  const sendRFQ = async (vendor, rfqKey) => {
+    if (!vendor.contact || vendor.contact === '—') {
       alert('❌ Vendor contact number not available!');
       return;
     }
@@ -394,22 +504,22 @@ const VendorMatchManager = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          matchID,
-          customerName,
-          customerEmail,
-          customerAddress,
-          productType: product,
-          model,
-          quantity: qty,
-          vendorContact,
-          vendorEmail,
-          vendorName
+          matchID: vendor.matchID,
+          customerName: vendor.customerName,
+          customerEmail: vendor.customerEmail,
+          customerAddress: vendor.customerAddress,
+          productType: vendor.product,
+          model: vendor.model,
+          quantity: vendor.quantity,
+          vendorContact: vendor.contact,
+          vendorEmail: vendor.email || '',
+          vendorName: vendor.name
         })
       });
       
       if (response.ok) {
         setRfqStatus(prev => ({ ...prev, [rfqKey]: 'sent' }));
-        alert(`✅ RFQ Sent Successfully!\n\nTo: ${vendorName}\nContact: ${vendorContact}\n\nProduct: ${product}\nModel: ${model}\nQuantity: ${qty}`);
+        alert(`✅ RFQ Sent Successfully!\n\nMatch ID: ${vendor.matchID}\nTo: ${vendor.name}\nContact: ${vendor.contact}\n\nProduct: ${vendor.product}\nModel: ${vendor.model}\nQuantity: ${vendor.quantity}`);
         
         setTimeout(() => {
           setRfqStatus(prev => ({ ...prev, [rfqKey]: null }));
@@ -424,33 +534,32 @@ const VendorMatchManager = () => {
     }
   };
 
-  const handleViewVendorResponse = (rfqKey, customerRow, vendor) => {
-    // Extract vendor response data from matching sheet columns
+  const handleViewVendorResponse = (vendor) => {
     const vendorResponse = {
-      Product_Available: cellValue(customerRow, 'vendor Product_available'),
-      Vendor_Price: cellValue(customerRow, 'Vendor Price'),
-      Available_Qty: cellValue(customerRow, 'vendor current Available_Qty'),
-      Can_Deliver: cellValue(customerRow, 'vendor Can_Deliver'),
-      Photo_Received: cellValue(customerRow, 'Photo_Received'),
-      Final_Status: cellValue(customerRow, 'Vendor ProductStatus'),
-      RFQ_Status: cellValue(customerRow, 'RFQ Status'),
-      Response_Date: cellValue(customerRow, 'Date_Time'),
-      Vendor_Phone: cellValue(customerRow, 'Vendor_Phone'),
-      RFQ_ID: cellValue(customerRow, 'RFQ_ID')
+      Product_Available: cellValue(vendor.originalRow, 'vendor Product_available'),
+      Vendor_Price: cellValue(vendor.originalRow, 'Vendor Price'),
+      Available_Qty: cellValue(vendor.originalRow, 'vendor current Available_Qty'),
+      Can_Deliver: cellValue(vendor.originalRow, 'vendor Can_Deliver'),
+      Photo_Received: cellValue(vendor.originalRow, 'Photo_Received'),
+      Final_Status: cellValue(vendor.originalRow, 'Vendor ProductStatus'),
+      RFQ_Status: cellValue(vendor.originalRow, 'RFQ Status'),
+      Response_Date: cellValue(vendor.originalRow, 'Date_Time'),
+      Vendor_Phone: cellValue(vendor.originalRow, 'Vendor_Phone'),
+      RFQ_ID: cellValue(vendor.originalRow, 'RFQ_ID')
     };
-
+  
     const matchData = {
-      vendorName: vendor['Potential Buyer 1'] || 'Vendor',
-      product: cellValue(customerRow, 'Product_Needed'),
-      model: cellValue(customerRow, 'Model_Needed'),
-      quantity: cellValue(customerRow, 'Qty_Needed'),
-      vendorContact: vendor['Potential Buyer 1 Contact Details'] || '',
-      matchID: cellValue(customerRow, 'Match_ID'),
-      customerName: cellValue(customerRow, 'Customer_Name'),
-      customerEmail: cellValue(customerRow, 'Customer_Email'),
-      customerAddress: cellValue(customerRow, 'Customer_Address')
+      vendorName: vendor.name || 'Vendor',
+      product: vendor.product,
+      model: vendor.model,
+      quantity: vendor.quantity,
+      vendorContact: vendor.contact || '',
+      matchID: vendor.matchID,
+      customerName: vendor.customerName,
+      customerEmail: vendor.customerEmail,
+      customerAddress: vendor.customerAddress
     };
-
+  
     setVendorResponseModal({
       isOpen: true,
       data: vendorResponse,
@@ -458,70 +567,93 @@ const VendorMatchManager = () => {
     });
   };
 
-  const filteredMatching = matchingData.filter(item => 
-    (item.Customer_Name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (item.Product_Needed || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (item.Potential_Buyer_1 || '').toLowerCase().includes(searchTerm.toLowerCase())
+  const groupedMatchingData = useMemo(() => {
+    const groups = {};
+    
+    matchingData.forEach(row => {
+      const customerName = cellValue(row, 'Customer_Name');
+      const product = cellValue(row, 'Product_Needed');
+      const quantity = cellValue(row, 'Qty_Needed');
+      
+      const groupKey = `${customerName}|${product}|${quantity}`;
+      
+      if (!groups[groupKey]) {
+        groups[groupKey] = {
+          mainRow: row,
+          vendors: [],
+          customerName,
+          product,
+          model: cellValue(row, 'Model_Needed'),
+          quantity,
+          customerEmail: cellValue(row, 'Customer_Email') || cellValue(row, 'Email_Address'),
+          customerAddress: cellValue(row, 'Customer_Address')
+        };
+      }
+      
+      const buyer1Name = cellValue(row, 'Potential_Buyer_1');
+      const buyer1Contact = cellValue(row, 'Potential Buyer 1 Contact Details');
+      const matchID = cellValue(row, 'Match_ID');
+      
+      if (buyer1Name && buyer1Name !== '—') {
+        const vendorExists = groups[groupKey].vendors.some(
+          v => v.name.toLowerCase().trim() === buyer1Name.toLowerCase().trim() && 
+               v.matchID === matchID
+        );
+        
+        if (!vendorExists) {
+          groups[groupKey].vendors.push({
+            name: buyer1Name,
+            contact: buyer1Contact,
+            email: cellValue(row, 'Potential Buyer 1 email id'),
+            itemDescription: cellValue(row, 'Vendor_Item_Found') || 'N/A',
+            quantity: cellValue(row, 'Vendor_Available_Qty') || '0',
+            uqc: cellValue(row, 'UQC') || '',
+            price: cellValue(row, 'Vendor_Price') || '0',
+            matchID: matchID,
+            originalRow: row,
+            customerName,
+            product,
+            model: cellValue(row, 'Model_Needed'),
+            quantity: cellValue(row, 'Qty_Needed'),
+            customerEmail: cellValue(row, 'Customer_Email') || cellValue(row, 'Email_Address'),
+            customerAddress: cellValue(row, 'Customer_Address')
+          });
+        }
+      }
+    });
+    
+    return Object.values(groups);
+  }, [matchingData]);
+
+  const filteredMatching = groupedMatchingData.filter(item => 
+    (item.customerName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (item.product || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.vendors.some(v => (v.matchID || '').toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const filteredVendor = vendorData.filter(item =>
-    (item['Potential Buyer 1'] || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (item['Item_Description'] || '').toLowerCase().includes(searchTerm.toLowerCase())
+    Object.values(item).some(val => 
+      String(val).toLowerCase().includes(searchTerm.toLowerCase())
+    )
   );
-
-  const filteredData = activeMenu === 'matching' ? filteredMatching : filteredVendor;
-
-  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = filteredData.slice(indexOfFirstItem, indexOfLastItem);
-
-  const paginate = (pageNumber) => {
-    setCurrentPage(pageNumber);
-    setExpandedRow(null);
-  };
 
   const matchingPrimaryCols = [
     'Match_ID',
     'Customer_Name',
     'Product_Needed',
-    'Model_Needed',
     'Qty_Needed',
-    'Match_Accuracy',
     'RFQ Status'
   ];
 
-  const cellValue = (row, key) => {
-    return row?.[key] ?? (row?.[key.replace(/ /g, '_')] ?? '—');
-  };
-
-  const getMatchingVendors = (customerRow) => {
-    const productNeeded = (cellValue(customerRow, 'Product_Needed') || '').toLowerCase().trim();
-    const modelNeeded = (cellValue(customerRow, 'Model_Needed') || '').toLowerCase().trim();
-    
-    if (!productNeeded && !modelNeeded) return [];
-    
-    return vendorData.filter(vendor => {
-      const itemDesc = (vendor['Item_Description'] || '').toLowerCase().trim();
-      const model = (vendor['Model'] || '').toLowerCase().trim();
-      const vendorProduct = (vendor['Product'] || '').toLowerCase().trim();
-      
-      // Multiple matching conditions
-      const matchesProduct = productNeeded && (
-        itemDesc.includes(productNeeded) || 
-        vendorProduct.includes(productNeeded) ||
-        productNeeded.split(' ').some(word => word.length > 3 && itemDesc.includes(word))
-      );
-      
-      const matchesModel = modelNeeded && (
-        model.includes(modelNeeded) || 
-        itemDesc.includes(modelNeeded) ||
-        modelNeeded.split(' ').some(word => word.length > 2 && (model.includes(word) || itemDesc.includes(word)))
-      );
-      
-      return matchesProduct || matchesModel;
-    }).slice(0, 10); // Limit to 10 vendors
-  };
+  const vendorPrimaryCols = [
+    'Potential Buyer 1',
+    'Item_Description',
+    'Quantity',
+    'UQC',
+    'Unit_Price',
+    'Potential Buyer 1 Contact Details',
+    'Potential Buyer 1 email id'
+  ];
 
   if (loading) {
     return (
@@ -574,11 +706,14 @@ const VendorMatchManager = () => {
 
         <nav className="p-3 space-y-2">
           <button
-            onClick={() => { setActiveMenu('matching'); setSearchTerm(''); }}
+            onClick={() => {
+              setActiveTab('matching');
+              setSearchTerm('');
+            }}
             className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all font-semibold text-sm ${
-              activeMenu === 'matching' 
-                ? 'bg-gradient-to-r from-indigo-500 to-indigo-600 text-white shadow-lg' 
-                : 'bg-gray-50 text-gray-700 hover:bg-indigo-50 border border-gray-200'
+              activeTab === 'matching'
+                ? 'bg-gradient-to-r from-indigo-500 to-indigo-600 text-white shadow-lg'
+                : 'hover:bg-indigo-50 text-gray-700'
             }`}
           >
             <div className="flex items-center">
@@ -586,26 +721,29 @@ const VendorMatchManager = () => {
               <span>Matching Sheet</span>
             </div>
             <span className={`text-xs px-2 py-1 rounded-full font-bold ${
-              activeMenu === 'matching' ? 'bg-white text-indigo-600' : 'bg-indigo-600 text-white'
+              activeTab === 'matching' ? 'bg-white text-indigo-600' : 'bg-indigo-100 text-indigo-600'
             }`}>
-              {matchingData.length}
+              {groupedMatchingData.length}
             </span>
           </button>
 
           <button
-            onClick={() => { setActiveMenu('vendor'); setSearchTerm(''); }}
+            onClick={() => {
+              setActiveTab('vendor');
+              setSearchTerm('');
+            }}
             className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all font-semibold text-sm ${
-              activeMenu === 'vendor' 
-                ? 'bg-gradient-to-r from-indigo-500 to-indigo-600 text-white shadow-lg' 
-                : 'bg-gray-50 text-gray-700 hover:bg-indigo-50 border border-gray-200'
+              activeTab === 'vendor'
+                ? 'bg-gradient-to-r from-indigo-500 to-indigo-600 text-white shadow-lg'
+                : 'hover:bg-indigo-50 text-gray-700'
             }`}
           >
             <div className="flex items-center">
-              <Package className="w-4 h-4 mr-2" />
+              <ShoppingBag className="w-4 h-4 mr-2" />
               <span>Vendor Sheet</span>
             </div>
             <span className={`text-xs px-2 py-1 rounded-full font-bold ${
-              activeMenu === 'vendor' ? 'bg-white text-indigo-600' : 'bg-indigo-600 text-white'
+              activeTab === 'vendor' ? 'bg-white text-indigo-600' : 'bg-indigo-100 text-indigo-600'
             }`}>
               {vendorData.length}
             </span>
@@ -620,7 +758,7 @@ const VendorMatchManager = () => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
             <input
               type="text"
-              placeholder={`Search in ${activeMenu === 'matching' ? 'Matching' : 'Vendor'} Sheet...`}
+              placeholder={`Search in ${activeTab === 'matching' ? 'Matching' : 'Vendor'} Sheet...`}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border-2 border-indigo-100 rounded-lg text-sm focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 outline-none"
@@ -628,222 +766,207 @@ const VendorMatchManager = () => {
           </div>
         </div>
 
-        <div className="flex-1 overflow-auto p-3">
-          <div className="bg-white rounded-xl shadow-xl border border-indigo-100 overflow-hidden h-full flex flex-col">
-            {activeMenu === 'matching' ? (
-              <>
-                <div className="bg-gradient-to-r from-indigo-500 to-indigo-600 px-4 py-3 text-white">
-                  <h2 className="text-base font-bold">Matching Sheet Data</h2>
-                  <p className="text-indigo-100 text-xs mt-1">View vendors and send RFQ via WhatsApp</p>
-                </div>
+        {activeTab === 'matching' ? (
+          <div className="flex-1 overflow-auto p-3">
+            <div className="bg-white rounded-xl shadow-xl border border-indigo-100 h-full flex flex-col">
+              <div className="bg-gradient-to-r from-indigo-500 to-indigo-600 px-4 py-3 text-white">
+                <h2 className="text-base font-bold">Matching Sheet Data</h2>
+                <p className="text-indigo-100 text-xs mt-1">View vendors and send RFQ via WhatsApp</p>
+              </div>
 
-                <div className="overflow-x-auto flex-1">
-                  <table className="w-full">
-                    <thead className="bg-indigo-50 border-b-2 border-indigo-200 sticky top-0">
-                      <tr>
-                        {matchingPrimaryCols.map(col => (
-                          <th key={col} className="px-2 py-2 text-left font-bold text-indigo-700 uppercase tracking-wide text-[10px] whitespace-nowrap">
-                            {col.replace(/_/g, ' ')}
-                          </th>
-                        ))}
-                        <th className="px-2 py-2 text-left font-bold text-indigo-700 uppercase tracking-wide text-[10px] whitespace-nowrap">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                      {currentItems.map((row, idx) => {
-                        const actualIdx = indexOfFirstItem + idx;
-                        const matchingVendors = getMatchingVendors(row);
-                        const isExpanded = expandedRow === actualIdx;
-                        
-                        return (
-                          <React.Fragment key={actualIdx}>
-                            <tr className={`hover:bg-indigo-50 transition-colors ${
-                              newEntries.has(actualIdx) ? 'bg-green-100 animate-pulse' : ''
-                            }`}>
-                              {matchingPrimaryCols.map(col => (
-                                <td key={col} className="px-2 py-2 text-[11px] text-gray-800 whitespace-nowrap">
-                                  <div className="max-w-[120px] truncate" title={cellValue(row, col)}>
-                                    {cellValue(row, col) || '—'}
+              <div className="overflow-auto flex-1">
+                <table className="w-full">
+                  <thead className="bg-indigo-50 border-b-2 border-indigo-200 sticky top-0">
+                    <tr>
+                      {matchingPrimaryCols.map(col => (
+                        <th key={col} className="px-2 py-2 text-left font-bold text-indigo-700 uppercase tracking-wide text-[10px] whitespace-nowrap">
+                          {col.replace(/_/g, ' ')}
+                        </th>
+                      ))}
+                      <th className="px-2 py-2 text-left font-bold text-indigo-700 uppercase tracking-wide text-[10px] whitespace-nowrap">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {filteredMatching.map((group, idx) => {
+                      const row = group.mainRow;
+                      const matchingVendors = group.vendors;
+                      const isExpanded = expandedRow === idx;
+                      const rowKey = `row-${idx}`;
+                      const selectedVendorsForRow = selectedVendors[rowKey] || [];
+                      
+                      return (
+                        <React.Fragment key={idx}>
+                          <tr className={`hover:bg-indigo-50 transition-colors ${
+                            newEntries.has(idx) ? 'bg-green-100 animate-pulse' : ''
+                          }`}>
+                            {matchingPrimaryCols.map(col => (
+                              <td key={col} className="px-2 py-2 text-[11px] text-gray-800 whitespace-nowrap">
+                                <div className="max-w-[120px] truncate" title={cellValue(row, col)}>
+                                  {cellValue(row, col) || '—'}
+                                </div>
+                              </td>
+                            ))}
+                            <td className="px-2 py-2">
+                              <div className="flex items-center gap-1 flex-wrap">
+                                <button
+                                  onClick={() => setExpandedRow(isExpanded ? null : idx)}
+                                  className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all whitespace-nowrap ${
+                                    matchingVendors.length > 0 
+                                      ? 'bg-green-600 hover:bg-green-700 text-white shadow-md' 
+                                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                  }`}
+                                  disabled={matchingVendors.length === 0}
+                                >
+                                  {isExpanded ? 'Hide' : 'Vendors'} ({matchingVendors.length})
+                                </button>
+                                <button
+                                  onClick={() => setSelectedBuyer({
+                                    type: 'matching',
+                                    fullRow: row,
+                                    customerName: group.customerName,
+                                    customerEmail: group.customerEmail,
+                                    customerAddress: group.customerAddress,
+                                    product: group.product,
+                                    model: group.model,
+                                    qtyNeeded: group.quantity,
+                                    accuracy: cellValue(row, 'Match_Accuracy'),
+                                    matchReason: cellValue(row, 'Match_Reason'),
+                                    dateTime: cellValue(row, 'Date_Time'),
+                                    vendorAvailableQty: cellValue(row, 'Vendor_Available_Qty'),
+                                    vendorPrice: cellValue(row, 'Vendor_Price'),
+                                    matchingVendors: matchingVendors
+                                  })}
+                                  className="px-2 py-1 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-[10px] font-bold flex items-center gap-1 whitespace-nowrap"
+                                >
+                                  <Eye className="w-3 h-3" />
+                                  Details
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                          
+                          {isExpanded && matchingVendors.length > 0 && (
+                            <tr className="bg-gradient-to-r from-indigo-50 to-blue-50">
+                              <td colSpan={matchingPrimaryCols.length + 1} className="px-2 py-3">
+                                <div className="bg-white rounded-xl border-2 border-indigo-200 p-3 shadow-lg">
+                                  <div className="flex items-center justify-between mb-3">
+                                    <h4 className="text-xs font-bold text-indigo-800 flex items-center">
+                                      <Package className="w-3 h-3 mr-2" />
+                                      Matched Vendors ({matchingVendors.length}) - Select & Send RFQ
+                                    </h4>
+                                    <div className="flex gap-2">
+                                      <button
+                                        onClick={() => {
+                                          const selectedList = matchingVendors.filter((_, vIdx) => 
+                                            selectedVendorsForRow.includes(vIdx)
+                                          );
+                                          sendSelectedRFQ(selectedList);
+                                        }}
+                                        disabled={selectedVendorsForRow.length === 0}
+                                        className={`px-3 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 shadow-md ${
+                                          selectedVendorsForRow.length === 0
+                                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                            : 'bg-blue-600 text-white hover:bg-blue-700'
+                                        }`}
+                                      >
+                                        <Mail className="w-3 h-3" />
+                                        Send Selected ({selectedVendorsForRow.length})
+                                      </button>
+                                      <button
+                                        onClick={() => sendAllRFQ(matchingVendors)}
+                                        className="px-3 py-1 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-[10px] font-bold flex items-center gap-1 shadow-md"
+                                      >
+                                        <Mail className="w-3 h-3" />
+                                        Send All RFQ
+                                      </button>
+                                    </div>
                                   </div>
-                                </td>
-                              ))}
-                              <td className="px-2 py-2">
-                                <div className="flex items-center gap-1">
-                                  <button
-                                    onClick={() => setExpandedRow(isExpanded ? null : actualIdx)}
-                                    className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all whitespace-nowrap ${
-                                      matchingVendors.length > 0 
-                                        ? 'bg-green-600 hover:bg-green-700 text-white shadow-md' 
-                                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                    }`}
-                                    disabled={matchingVendors.length === 0}
-                                  >
-                                    {isExpanded ? 'Hide' : 'Vendor'} ({matchingVendors.length})
-                                  </button>
-                                  <button
-                                    onClick={() => setSelectedBuyer({
-                                      type: 'matching',
-                                      fullRow: row,
-                                      customerName: cellValue(row, 'Customer_Name'),
-                                      customerEmail: cellValue(row, 'Customer_Email'),
-                                      product: cellValue(row, 'Product_Needed'),
-                                      model: cellValue(row, 'Model_Needed'),
-                                      qtyNeeded: cellValue(row, 'Qty_Needed'),
-                                      accuracy: cellValue(row, 'Match_Accuracy'),
-                                      matchReason: cellValue(row, 'Match_Reason'),
-                                      buyer1: cellValue(row, 'Potential_Buyer_1'),
-                                      buyer1Contact: cellValue(row, 'Potential Buyer 1 Contact Details'),
-                                      buyer1Email: cellValue(row, 'Potential Buyer 1 email id')
+                                  <div className="space-y-2 max-h-[500px] overflow-y-auto">
+                                    {matchingVendors.map((vendor, vIdx) => {
+                                      const isSelected = selectedVendorsForRow.includes(vIdx);
+                                      
+                                      return (
+                                        <VendorRow
+                                          key={`${vendor.matchID}-${vIdx}`}
+                                          vendor={vendor}
+                                          onSendRFQ={sendRFQ}
+                                          rfqStatus={rfqStatus}
+                                          onViewResponse={handleViewVendorResponse}
+                                          isSelected={isSelected}
+                                          onToggleSelect={() => {
+                                            setSelectedVendors(prev => {
+                                              const current = prev[rowKey] || [];
+                                              const updated = isSelected
+                                                ? current.filter(i => i !== vIdx)
+                                                : [...current, vIdx];
+                                              return { ...prev, [rowKey]: updated };
+                                            });
+                                          }}
+                                        />
+                                      );
                                     })}
-                                    className="px-2 py-1 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-[10px] font-bold flex items-center gap-1 whitespace-nowrap"
-                                  >
-                                    <Eye className="w-3 h-3" />
-                                    Details
-                                  </button>
+                                  </div>
                                 </div>
                               </td>
                             </tr>
-                            
-                            {isExpanded && matchingVendors.length > 0 && (
-                              <tr className="bg-gradient-to-r from-indigo-50 to-blue-50">
-                                <td colSpan={matchingPrimaryCols.length + 1} className="px-4 py-6">
-                                  <div className="bg-white rounded-xl border-2 border-indigo-200 p-4 shadow-lg">
-                                    <h4 className="text-sm font-bold text-indigo-800 mb-3 flex items-center">
-                                      <Package className="w-4 h-4 mr-2" />
-                                      Matched Vendors - Send RFQ & View Response
-                                    </h4>
-                                    <div className="space-y-2 max-h-96 overflow-y-auto">
-                                      {matchingVendors.map((vendor, vIdx) => {
-                                        const rfqKey = `${actualIdx}-${vIdx}`;
-                                        return (
-                                          <VendorRow
-                                            key={vIdx}
-                                            vendor={vendor}
-                                            customerRow={row}
-                                            rfqKey={rfqKey}
-                                            onSendRFQ={sendRFQ}
-                                            rfqStatus={rfqStatus}
-                                            onViewResponse={handleViewVendorResponse}
-                                          />
-                                        );
-                                      })}
-                                    </div>
-                                  </div>
-                                </td>
-                              </tr>
-                            )}
-                          </React.Fragment>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="bg-gradient-to-r from-indigo-500 to-indigo-600 px-4 py-3 text-white">
-                  <h2 className="text-base font-bold">Vendor Sheet Data</h2>
-                  <p className="text-indigo-100 text-xs mt-1">Complete vendor information</p>
-                </div>
+                          )}
+                        </React.Fragment>
+                      );
+                    })}
+                  </tbody>
+                </table>
 
-                <div className="overflow-x-auto flex-1">
-                  <table className="w-full">
-                    <thead className="bg-indigo-50 border-b-2 border-indigo-200">
-                      <tr>
-                        <th className="px-2 py-2 text-left font-bold text-indigo-700 uppercase text-[10px]">Vendor</th>
-                        <th className="px-2 py-2 text-left font-bold text-indigo-700 uppercase text-[10px]">Item</th>
-                        <th className="px-2 py-2 text-left font-bold text-indigo-700 uppercase text-[10px]">Qty</th>
-                        <th className="px-2 py-2 text-left font-bold text-indigo-700 uppercase text-[10px]">Price</th>
-                        <th className="px-2 py-2 text-left font-bold text-indigo-700 uppercase text-[10px]">Contact</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                      {currentItems.map((row, idx) => (
-                        <tr key={idx} className="hover:bg-indigo-50 transition-colors">
-                          <td className="px-2 py-2 text-[11px] text-gray-800 font-semibold">
-                            {row['Potential Buyer 1'] || '—'}
-                          </td>
-                          <td className="px-2 py-2 text-[11px] text-gray-800">
-                            <div className="max-w-[200px] line-clamp-2">
-                              {row['Item_Description'] || '—'}
+                {filteredMatching.length === 0 && (
+                  <div className="text-center py-16">
+                    <Package className="w-20 h-20 text-indigo-200 mx-auto mb-4" />
+                    <h3 className="text-xl font-bold text-gray-400 mb-2">No Data Found</h3>
+                    <p className="text-gray-500">Try clearing filters</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="flex-1 overflow-auto p-3">
+            <div className="bg-white rounded-xl shadow-xl border border-indigo-100 h-full flex flex-col">
+              <div className="bg-gradient-to-r from-green-500 to-green-600 px-4 py-3 text-white">
+                <h2 className="text-base font-bold">Vendor Sheet Data</h2>
+                <p className="text-green-100 text-xs mt-1">View all vendor information</p>
+              </div>
+
+              <div className="overflow-auto flex-1">
+                <table className="w-full">
+                  <thead className="bg-green-50 border-b-2 border-green-200 sticky top-0">
+                    <tr>
+                      {vendorPrimaryCols.map(col => (
+                        <th key={col} className="px-2 py-2 text-left font-bold text-green-700 uppercase tracking-wide text-[10px] whitespace-nowrap">
+                          {col.replace(/_/g, ' ')}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {filteredVendor.map((row, idx) => (
+                      <tr key={idx} className="hover:bg-green-50 transition-colors">
+                        {vendorPrimaryCols.map(col => (
+                          <td key={col} className="px-2 py-2 text-[11px] text-gray-800">
+                            <div className="max-w-[150px] truncate" title={cellValue(row, col)}>
+                              {cellValue(row, col) || '—'}
                             </div>
                           </td>
-                          <td className="px-2 py-2 text-[11px] text-gray-800">
-                            {row['Quantity'] || '0'} {row['UQC'] || ''}
-                          </td>
-                          <td className="px-2 py-2 text-[11px] font-bold text-green-700">
-                            ₹{row['Unit_Price'] || '0'}
-                          </td>
-                          <td className="px-2 py-2 text-[11px] text-gray-700">
-                            {row['Potential Buyer 1 Contact Details'] || '—'}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </>
-            )}
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
 
-            {filteredData.length === 0 && (
-              <div className="text-center py-16">
-                <Package className="w-20 h-20 text-indigo-200 mx-auto mb-4" />
-                <h3 className="text-xl font-bold text-gray-400 mb-2">No Data Found</h3>
-                <p className="text-gray-500">Try clearing filters</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Pagination */}
-        {filteredData.length > 0 && (
-          <div className="p-3 bg-white border-t border-indigo-100">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-              <div className="text-xs text-gray-600 font-medium">
-                Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, filteredData.length)} of {filteredData.length}
-              </div>
-              
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => paginate(currentPage - 1)}
-                  disabled={currentPage === 1}
-                  className={`p-1 rounded-lg transition-all ${
-                    currentPage === 1 
-                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                      : 'bg-indigo-600 text-white hover:bg-indigo-700'
-                  }`}
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-                
-                {[...Array(Math.min(5, totalPages))].map((_, i) => {
-                  const pageNum = i + 1;
-                  return (
-                    <button
-                      key={pageNum}
-                      onClick={() => paginate(pageNum)}
-                      className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
-                        currentPage === pageNum
-                          ? 'bg-indigo-600 text-white shadow-lg'
-                          : 'bg-gray-100 text-gray-700 hover:bg-indigo-100'
-                      }`}
-                    >
-                      {pageNum}
-                    </button>
-                  );
-                })}
-                
-                <button
-                  onClick={() => paginate(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                  className={`p-1 rounded-lg transition-all ${
-                    currentPage === totalPages 
-                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                      : 'bg-indigo-600 text-white hover:bg-indigo-700'
-                  }`}
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
+                {filteredVendor.length === 0 && (
+                  <div className="text-center py-16">
+                    <ShoppingBag className="w-20 h-20 text-green-200 mx-auto mb-4" />
+                    <h3 className="text-xl font-bold text-gray-400 mb-2">No Vendor Data Found</h3>
+                    <p className="text-gray-500">Try clearing filters</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -859,7 +982,7 @@ const VendorMatchManager = () => {
                 <div className="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-3">
                   <User className="w-5 h-5" />
                 </div>
-                <h3 className="text-lg md:text-xl font-bold">Customer Details</h3>
+                <h3 className="text-lg md:text-xl font-bold">Customer Request Details</h3>
               </div>
               <button onClick={() => setSelectedBuyer(null)} className="p-2 rounded-lg hover:bg-white hover:bg-opacity-20">
                 <X className="w-5 h-5" />
@@ -867,36 +990,67 @@ const VendorMatchManager = () => {
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 md:p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div className="p-4 bg-indigo-50 rounded-xl border border-indigo-200">
+                  <div className="text-xs text-indigo-700 font-bold mb-2">Date & Time</div>
+                  <div className="text-sm font-semibold text-gray-900">{selectedBuyer.dateTime || '—'}</div>
+                </div>
                 <div className="p-4 bg-indigo-50 rounded-xl border border-indigo-200">
                   <div className="text-xs text-indigo-700 font-bold mb-2">Customer Name</div>
-                  <div className="text-base font-semibold text-gray-900">{selectedBuyer.customerName}</div>
+                  <div className="text-sm font-semibold text-gray-900">{selectedBuyer.customerName}</div>
                 </div>
                 <div className="p-4 bg-indigo-50 rounded-xl border border-indigo-200">
                   <div className="text-xs text-indigo-700 font-bold mb-2">Email</div>
-                  <div className="text-base font-semibold text-gray-900">{selectedBuyer.customerEmail}</div>
+                  <div className="text-sm font-semibold text-gray-900 break-all">{selectedBuyer.customerEmail}</div>
                 </div>
                 <div className="p-4 bg-indigo-50 rounded-xl border border-indigo-200">
-                  <div className="text-xs text-indigo-700 font-bold mb-2">Product</div>
-                  <div className="text-base font-semibold text-gray-900">{selectedBuyer.product}</div>
+                  <div className="text-xs text-indigo-700 font-bold mb-2">Address</div>
+                  <div className="text-sm font-semibold text-gray-900">{selectedBuyer.customerAddress || '—'}</div>
                 </div>
                 <div className="p-4 bg-indigo-50 rounded-xl border border-indigo-200">
-                  <div className="text-xs text-indigo-700 font-bold mb-2">Model</div>
-                  <div className="text-base font-semibold text-gray-900">{selectedBuyer.model}</div>
+                  <div className="text-xs text-indigo-700 font-bold mb-2">Product Needed</div>
+                  <div className="text-sm font-semibold text-gray-900">{selectedBuyer.product}</div>
                 </div>
                 <div className="p-4 bg-indigo-50 rounded-xl border border-indigo-200">
-                  <div className="text-xs text-indigo-700 font-bold mb-2">Quantity</div>
-                  <div className="text-base font-semibold text-gray-900">{selectedBuyer.qtyNeeded}</div>
+                  <div className="text-xs text-indigo-700 font-bold mb-2">Quantity Needed</div>
+                  <div className="text-sm font-semibold text-gray-900">{selectedBuyer.qtyNeeded}</div>
+                </div>
+                <div className="p-4 bg-indigo-50 rounded-xl border border-indigo-200">
+                  <div className="text-xs text-indigo-700 font-bold mb-2">Vendor Available Qty</div>
+                  <div className="text-sm font-semibold text-gray-900">{selectedBuyer.vendorAvailableQty || '—'}</div>
                 </div>
                 <div className="p-4 bg-green-50 rounded-xl border border-green-200">
-                  <div className="text-xs text-green-700 font-bold mb-2">Match Accuracy</div>
-                  <div className="text-2xl font-bold text-green-600">{selectedBuyer.accuracy}</div>
+                  <div className="text-xs text-green-700 font-bold mb-2">Vendor Price</div>
+                  <div className="text-lg font-bold text-green-600">₹{selectedBuyer.vendorPrice || '—'}</div>
                 </div>
               </div>
+
+              {selectedBuyer.matchingVendors && selectedBuyer.matchingVendors.length > 0 && (
+                <div className="mt-6 p-4 bg-gradient-to-br from-orange-50 to-red-50 rounded-xl border-2 border-orange-200">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <h4 className="text-sm font-bold text-orange-800">Send RFQ to All Vendors</h4>
+                      <p className="text-xs text-orange-600 mt-1">
+                        {selectedBuyer.matchingVendors.length} vendor(s) available
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        sendAllRFQ(selectedBuyer.matchingVendors);
+                        setSelectedBuyer(null);
+                      }}
+                      className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-bold flex items-center gap-2 shadow-lg"
+                    >
+                      <Mail className="w-4 h-4" />
+                      Send All RFQ
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
-            <div className="sticky bottom-0 p-4 bg-gray-50 border-t flex justify-end">
-              <button onClick={() => setSelectedBuyer(null)} className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-semibold">
+            <div className="sticky bottom-0 p-4 bg-gray-50 border-t flex justify-end gap-3">
+              <button onClick={() => setSelectedBuyer(null)} className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-semibold text-sm">
                 Close
               </button>
             </div>
