@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, Package, TrendingUp, X, Mail, Eye, CheckCircle, Clock, AlertCircle, User, ShoppingBag } from 'lucide-react';
+import { Search, Package, TrendingUp, X, Mail, Eye, CheckCircle, Clock, AlertCircle, User, ShoppingBag, ChevronLeft, ChevronRight, Phone } from 'lucide-react';
 
 // ============================================
-// 1. VENDOR RESPONSE MODAL COMPONENT
+// VENDOR RESPONSE MODAL COMPONENT
 // ============================================
 const VendorResponseModal = ({ isOpen, onClose, vendorData, matchData }) => {
   if (!isOpen) return null;
@@ -176,14 +176,19 @@ const VendorResponseModal = ({ isOpen, onClose, vendorData, matchData }) => {
 };
 
 // ============================================
-// 2. VENDOR ROW COMPONENT
+// VENDOR ROW COMPONENT
 // ============================================
 const VendorRow = ({ vendor, onSendRFQ, rfqStatus, onViewResponse, isSelected, onToggleSelect }) => {
   const rfqKey = `${vendor.matchID}-${vendor.name}`;
   const status = rfqStatus[rfqKey];
+  const hasResponse = vendor.originalRow?.['vendor Product_available'] || vendor.originalRow?.['Vendor Price'];
 
   return (
-    <div className="flex flex-col lg:flex-row lg:items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-200 hover:border-indigo-300 hover:shadow-md transition-all gap-3">
+    <div className={`flex flex-col lg:flex-row lg:items-center justify-between p-3 rounded-xl border-2 transition-all gap-3 ${
+      hasResponse 
+        ? 'bg-green-50 border-green-400 hover:border-green-500 hover:shadow-xl' 
+        : 'bg-gray-50 border-gray-200 hover:border-indigo-300 hover:shadow-md'
+    }`}>
       <div className="flex items-center gap-3 flex-1">
         <input
           type="checkbox"
@@ -191,6 +196,11 @@ const VendorRow = ({ vendor, onSendRFQ, rfqStatus, onViewResponse, isSelected, o
           onChange={onToggleSelect}
           className="w-5 h-5 rounded border-gray-300 text-indigo-600 focus:ring-2 focus:ring-indigo-500"
         />
+        {hasResponse && (
+          <div className="flex-shrink-0">
+            <CheckCircle className="w-5 h-5 text-green-600 animate-pulse" />
+          </div>
+        )}
         <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
           <div>
             <span className="text-[10px] text-gray-500 block font-semibold mb-1">Match ID</span>
@@ -204,10 +214,10 @@ const VendorRow = ({ vendor, onSendRFQ, rfqStatus, onViewResponse, isSelected, o
             <span className="text-[10px] text-gray-500 block font-semibold mb-1">Item</span>
             <span className="text-gray-700 line-clamp-2">{vendor.itemDescription || '—'}</span>
           </div>
-         <div>
-  <span className="text-[10px] text-gray-500 block font-semibold mb-1">Available Qty</span>
-  <span className="text-gray-800 font-medium">{vendor.availableQty || '0'} {vendor.uqc || ''}</span>  {/* ✅ FIXED */}
-</div>
+          <div>
+            <span className="text-[10px] text-gray-500 block font-semibold mb-1">Available Qty</span>
+            <span className="text-gray-800 font-medium">{vendor.availableQty || '0'} {vendor.uqc || ''}</span>
+          </div>
           <div>
             <span className="text-[10px] text-gray-500 block font-semibold mb-1">Price</span>
             <span className="text-green-700 font-bold text-sm">₹{vendor.price || '0'}</span>
@@ -244,10 +254,23 @@ const VendorRow = ({ vendor, onSendRFQ, rfqStatus, onViewResponse, isSelected, o
 
         <button
           onClick={() => onViewResponse(vendor)}
-          className="px-4 py-2 rounded-xl text-xs font-bold bg-purple-600 text-white hover:bg-purple-700 shadow-md hover:shadow-lg transform hover:scale-105 transition-all flex items-center gap-2 whitespace-nowrap"
+          className={`px-4 py-2 rounded-xl text-xs font-bold shadow-md hover:shadow-lg transform hover:scale-105 transition-all flex items-center gap-2 whitespace-nowrap ${
+            hasResponse 
+              ? 'bg-green-600 text-white hover:bg-green-700 ring-2 ring-green-400' 
+              : 'bg-purple-600 text-white hover:bg-purple-700'
+          }`}
         >
-          <Eye className="w-3 h-3" />
-          Response
+          {hasResponse ? (
+            <>
+              <CheckCircle className="w-4 h-4 animate-pulse" />
+              ✓ Response
+            </>
+          ) : (
+            <>
+              <Eye className="w-3 h-3" />
+              Response
+            </>
+          )}
         </button>
       </div>
     </div>
@@ -255,12 +278,85 @@ const VendorRow = ({ vendor, onSendRFQ, rfqStatus, onViewResponse, isSelected, o
 };
 
 // ============================================
-// 3. MAIN COMPONENT
+// PAGINATION COMPONENT
+// ============================================
+const Pagination = ({ currentPage, totalPages, onPageChange, itemsPerPage, totalItems }) => {
+  const startItem = (currentPage - 1) * itemsPerPage + 1;
+  const endItem = Math.min(currentPage * itemsPerPage, totalItems);
+
+  return (
+    <div className="flex flex-col sm:flex-row items-center justify-between p-3 bg-white border-t border-gray-200 gap-3">
+      <div className="text-sm text-gray-600">
+        Showing <span className="font-semibold text-gray-900">{startItem}</span> to{' '}
+        <span className="font-semibold text-gray-900">{endItem}</span> of{' '}
+        <span className="font-semibold text-gray-900">{totalItems}</span> results
+      </div>
+      <div className="flex gap-2">
+        <button
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+          className={`px-3 py-1 rounded-lg flex items-center gap-1 text-sm font-semibold transition-all ${
+            currentPage === 1
+              ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+              : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-md'
+          }`}
+        >
+          <ChevronLeft className="w-4 h-4" />
+          Prev
+        </button>
+        <div className="flex items-center gap-1">
+          {[...Array(Math.min(5, totalPages))].map((_, idx) => {
+            let pageNum;
+            if (totalPages <= 5) {
+              pageNum = idx + 1;
+            } else if (currentPage <= 3) {
+              pageNum = idx + 1;
+            } else if (currentPage >= totalPages - 2) {
+              pageNum = totalPages - 4 + idx;
+            } else {
+              pageNum = currentPage - 2 + idx;
+            }
+            
+            return (
+              <button
+                key={pageNum}
+                onClick={() => onPageChange(pageNum)}
+                className={`px-3 py-1 rounded-lg text-sm font-semibold transition-all ${
+                  currentPage === pageNum
+                    ? 'bg-indigo-600 text-white shadow-md'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                {pageNum}
+              </button>
+            );
+          })}
+        </div>
+        <button
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+          className={`px-3 py-1 rounded-lg flex items-center gap-1 text-sm font-semibold transition-all ${
+            currentPage === totalPages
+              ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+              : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-md'
+          }`}
+        >
+          Next
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// ============================================
+// MAIN COMPONENT
 // ============================================
 const VendorMatchManager = () => {
-  const MATCHING_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1dLhQJWr26bEphJG-sNvvjW3bizNDDmY3jAYkljrsH_Q/edit?gid=1282806052';
-  const VENDOR_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1dLhQJWr26bEphJG-sNvvjW3bizNDDmY3jAYkljrsH_Q/edit?gid=0';
-  const N8N_WEBHOOK_URL = 'https://n8n.avertisystems.com/webhook-test/send-vendor-rfq';
+  const MATCHING_SHEET_URL = import.meta.env.VITE_MATCHING_SHEET_URL;
+  const VENDOR_SHEET_URL = import.meta.env.VITE_VENDOR_SHEET_URL;
+  const N8N_WEBHOOK_URL = import.meta.env.VITE_N8N_WEBHOOK_URL;
+  const ITEMS_PER_PAGE = 500;
   
   const [matchingData, setMatchingData] = useState([]);
   const [vendorData, setVendorData] = useState([]);
@@ -274,6 +370,7 @@ const VendorMatchManager = () => {
   const [vendorResponseModal, setVendorResponseModal] = useState({ isOpen: false, data: null, matchData: null });
   const [activeTab, setActiveTab] = useState('matching');
   const [selectedVendors, setSelectedVendors] = useState({});
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     fetchSheetData();
@@ -323,14 +420,12 @@ const VendorMatchManager = () => {
         }).filter(r => Object.keys(r).length > 0);
       };
 
-      // Fetch matching sheet
       const matchingUrl = `https://docs.google.com/spreadsheets/d/${matchingInfo.sheetId}/gviz/tq?tqx=out:csv&gid=${matchingInfo.gid}`;
       const matchingRes = await fetch(matchingUrl);
       const matchingCsv = await matchingRes.text();
       const parsedMatching = parseCSV(matchingCsv);
       const reversedData = parsedMatching.reverse();
 
-      // Fetch vendor sheet
       const vendorUrl = `https://docs.google.com/spreadsheets/d/${vendorInfo.sheetId}/gviz/tq?tqx=out:csv&gid=${vendorInfo.gid}`;
       const vendorRes = await fetch(vendorUrl);
       const vendorCsv = await vendorRes.text();
@@ -360,194 +455,181 @@ const VendorMatchManager = () => {
     return row?.[key] ?? (row?.[key.replace(/ /g, '_')] ?? '—');
   };
 
-const sendAllRFQ = async (vendors) => {
-  if (vendors.length === 0) {
-    alert('❌ No vendors found!');
-    return;
-  }
-
-  const firstVendor = vendors[0];
-  const confirmMsg = `Send RFQ to ${vendors.length} vendor(s)?\n\nProduct: ${firstVendor.product}\nModel: ${firstVendor.model}\nQuantity: ${firstVendor.quantity}`;
-  if (!window.confirm(confirmMsg)) return;
-
-  let successCount = 0;
-  let failCount = 0;
-
-  for (const vendor of vendors) {
-    if (!vendor.contact || vendor.contact === '—') {
-      failCount++;
-      continue;
+  const sendAllRFQ = async (vendors) => {
+    if (vendors.length === 0) {
+      alert('❌ No vendors found!');
+      return;
     }
 
-    const rfqKey = `${vendor.matchID}-${vendor.name}`;
-    setRfqStatus(prev => ({ ...prev, [rfqKey]: 'sending' }));
-    
-    try {
-      const response = await fetch(N8N_WEBHOOK_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          matchID: vendor.matchID,
-          customerName: vendor.customerName,
-          customerEmail: vendor.customerEmail,
-          customerAddress: vendor.customerAddress,
-          productType: vendor.product,
-          model: vendor.model,
-          quantity: vendor.quantity,
-          vendorContact: vendor.contact,
-          vendorEmail: vendor.email || '',
-          vendorName: vendor.name,
-          
-          // ✅ ADD THESE FIELDS:
-          itemDescription: vendor.itemDescription || '',
-          availableQty: vendor.availableQty || vendor.quantity || '',
-          price: vendor.price || '0'
-        })
-      });
-      
-      if (response.ok) {
-        successCount++;
-        setRfqStatus(prev => ({ ...prev, [rfqKey]: 'sent' }));
-      } else {
+    const firstVendor = vendors[0];
+    const confirmMsg = `Send RFQ to ${vendors.length} vendor(s)?\n\nProduct: ${firstVendor.product}\nModel: ${firstVendor.model}\nQuantity: ${firstVendor.quantity}`;
+    if (!window.confirm(confirmMsg)) return;
+
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const vendor of vendors) {
+      if (!vendor.contact || vendor.contact === '—') {
         failCount++;
-        setRfqStatus(prev => ({ ...prev, [rfqKey]: null }));
+        continue;
       }
-    } catch (error) {
-      console.error('Error sending RFQ to:', vendor.name, error);
-      failCount++;
-      setRfqStatus(prev => ({ ...prev, [rfqKey]: null }));
-    }
 
-    await new Promise(resolve => setTimeout(resolve, 500));
-  }
-
-  alert(`✅ RFQ Sending Complete!\n\n✓ Success: ${successCount}\n✗ Failed: ${failCount}`);
-  setTimeout(() => {
-    setRfqStatus({});
-  }, 3000);
-};
-
- const sendSelectedRFQ = async (vendors) => {
-  if (vendors.length === 0) {
-    alert('❌ No vendors selected!');
-    return;
-  }
-
-  const firstVendor = vendors[0];
-  const confirmMsg = `Send RFQ to ${vendors.length} selected vendor(s)?\n\nProduct: ${firstVendor.product}\nModel: ${firstVendor.model}\nQuantity: ${firstVendor.quantity}`;
-  if (!window.confirm(confirmMsg)) return;
-
-  let successCount = 0;
-  let failCount = 0;
-
-  for (const vendor of vendors) {
-    if (!vendor.contact || vendor.contact === '—') {
-      failCount++;
-      continue;
-    }
-
-    const rfqKey = `${vendor.matchID}-${vendor.name}`;
-    setRfqStatus(prev => ({ ...prev, [rfqKey]: 'sending' }));
-    
-    try {
-      const response = await fetch(N8N_WEBHOOK_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          matchID: vendor.matchID,
-          customerName: vendor.customerName,
-          customerEmail: vendor.customerEmail,
-          customerAddress: vendor.customerAddress,
-          productType: vendor.product,
-          model: vendor.model,
-          quantity: vendor.quantity,
-          vendorContact: vendor.contact,
-          vendorEmail: vendor.email || '',
-          vendorName: vendor.name,
-          
-          // ✅ ADD THESE FIELDS:
-          itemDescription: vendor.itemDescription || '',
-          availableQty: vendor.availableQty || vendor.quantity || '',
-          price: vendor.price || '0'
-        })
-      });
+      const rfqKey = `${vendor.matchID}-${vendor.name}`;
+      setRfqStatus(prev => ({ ...prev, [rfqKey]: 'sending' }));
       
-      if (response.ok) {
-        successCount++;
-        setRfqStatus(prev => ({ ...prev, [rfqKey]: 'sent' }));
-      } else {
-        failCount++;
-        setRfqStatus(prev => ({ ...prev, [rfqKey]: null }));
-      }
-    } catch (error) {
-      console.error('Error sending RFQ to:', vendor.name, error);
-      failCount++;
-      setRfqStatus(prev => ({ ...prev, [rfqKey]: null }));
-    }
-
-    await new Promise(resolve => setTimeout(resolve, 500));
-  }
-
-  alert(`✅ RFQ Sending Complete!\n\n✓ Success: ${successCount}\n✗ Failed: ${failCount}`);
-  setSelectedVendors({});
-  setTimeout(() => {
-    setRfqStatus({});
-  }, 3000);
-};
-
-const sendRFQ = async (vendor, rfqKey) => {
-  if (!vendor.contact || vendor.contact === '—') {
-    alert('❌ Vendor contact number not available!');
-    return;
-  }
-  
-  setRfqStatus(prev => ({ ...prev, [rfqKey]: 'sending' }));
-  
-  try {
-    const response = await fetch(N8N_WEBHOOK_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        matchID: vendor.matchID,
-        customerName: vendor.customerName,
-        customerEmail: vendor.customerEmail,
-        customerAddress: vendor.customerAddress,
-        productType: vendor.product,
-        model: vendor.model,
-        quantity: vendor.quantity,
-        vendorContact: vendor.contact,
-        vendorEmail: vendor.email || '',
-        vendorName: vendor.name,
+      try {
+        const response = await fetch(N8N_WEBHOOK_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            matchID: vendor.matchID,
+            customerName: vendor.customerName,
+            customerEmail: vendor.customerEmail,
+            customerAddress: vendor.customerAddress,
+            customerWhatsapp: vendor.customerWhatsapp,
+            productType: vendor.product,
+            model: vendor.model,
+            quantity: vendor.quantity,
+            vendorContact: vendor.contact,
+            vendorEmail: vendor.email || '',
+            vendorName: vendor.name,
+            itemDescription: vendor.itemDescription || '',
+            availableQty: vendor.availableQty || vendor.quantity || '',
+            price: vendor.price || '0'
+          })
+        });
         
-        // ✅ ADD THESE FIELDS:
-        itemDescription: vendor.itemDescription || '',
-        availableQty: vendor.availableQty || vendor.quantity || '',
-        price: vendor.price || '0'
-      })
-    });
-    
-    if (response.ok) {
-      setRfqStatus(prev => ({ ...prev, [rfqKey]: 'sent' }));
-      alert(`✅ RFQ Sent Successfully!\n\nMatch ID: ${vendor.matchID}\nTo: ${vendor.name}\nContact: ${vendor.contact}\n\nProduct: ${vendor.product}\nModel: ${vendor.model}\nQuantity: ${vendor.quantity}`);
-      
-      setTimeout(() => {
+        if (response.ok) {
+          successCount++;
+          setRfqStatus(prev => ({ ...prev, [rfqKey]: 'sent' }));
+        } else {
+          failCount++;
+          setRfqStatus(prev => ({ ...prev, [rfqKey]: null }));
+        }
+      } catch (error) {
+        console.error('Error sending RFQ to:', vendor.name, error);
+        failCount++;
         setRfqStatus(prev => ({ ...prev, [rfqKey]: null }));
-      }, 3000);
-    } else {
-      throw new Error('Failed to send RFQ');
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 500));
     }
-  } catch (error) {
-    console.error('Error sending RFQ:', error);
-    alert('❌ Failed to send RFQ. Please try again.');
-    setRfqStatus(prev => ({ ...prev, [rfqKey]: null }));
-  }
-};
+
+    alert(`✅ RFQ Sending Complete!\n\n✓ Success: ${successCount}\n✗ Failed: ${failCount}`);
+    setTimeout(() => setRfqStatus({}), 3000);
+  };
+
+  const sendSelectedRFQ = async (vendors) => {
+    if (vendors.length === 0) {
+      alert('❌ No vendors selected!');
+      return;
+    }
+
+    const firstVendor = vendors[0];
+    const confirmMsg = `Send RFQ to ${vendors.length} selected vendor(s)?\n\nProduct: ${firstVendor.product}\nModel: ${firstVendor.model}\nQuantity: ${firstVendor.quantity}`;
+    if (!window.confirm(confirmMsg)) return;
+
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const vendor of vendors) {
+      if (!vendor.contact || vendor.contact === '—') {
+        failCount++;
+        continue;
+      }
+
+      const rfqKey = `${vendor.matchID}-${vendor.name}`;
+      setRfqStatus(prev => ({ ...prev, [rfqKey]: 'sending' }));
+      
+      try {
+        const response = await fetch(N8N_WEBHOOK_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            matchID: vendor.matchID,
+            customerName: vendor.customerName,
+            customerEmail: vendor.customerEmail,
+            customerAddress: vendor.customerAddress,
+            customerWhatsapp: vendor.customerWhatsapp,
+            productType: vendor.product,
+            model: vendor.model,
+            quantity: vendor.quantity,
+            vendorContact: vendor.contact,
+            vendorEmail: vendor.email || '',
+            vendorName: vendor.name,
+            itemDescription: vendor.itemDescription || '',
+            availableQty: vendor.availableQty || vendor.quantity || '',
+            price: vendor.price || '0'
+          })
+        });
+        
+        if (response.ok) {
+          successCount++;
+          setRfqStatus(prev => ({ ...prev, [rfqKey]: 'sent' }));
+        } else {
+          failCount++;
+          setRfqStatus(prev => ({ ...prev, [rfqKey]: null }));
+        }
+      } catch (error) {
+        console.error('Error sending RFQ to:', vendor.name, error);
+        failCount++;
+        setRfqStatus(prev => ({ ...prev, [rfqKey]: null }));
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+
+    alert(`✅ RFQ Sending Complete!\n\n✓ Success: ${successCount}\n✗ Failed: ${failCount}`);
+    setSelectedVendors({});
+    setTimeout(() => setRfqStatus({}), 3000);
+  };
+
+  const sendRFQ = async (vendor, rfqKey) => {
+    if (!vendor.contact || vendor.contact === '—') {
+      alert('❌ Vendor contact number not available!');
+      return;
+    }
+    
+    setRfqStatus(prev => ({ ...prev, [rfqKey]: 'sending' }));
+    
+    try {
+      const response = await fetch(N8N_WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          matchID: vendor.matchID,
+          customerName: vendor.customerName,
+          customerEmail: vendor.customerEmail,
+          customerAddress: vendor.customerAddress,
+          customerWhatsapp: vendor.customerWhatsapp,
+          productType: vendor.product,
+          model: vendor.model,
+          quantity: vendor.quantity,
+          vendorContact: vendor.contact,
+          vendorEmail: vendor.email || '',
+          vendorName: vendor.name,
+          itemDescription: vendor.itemDescription || '',
+          availableQty: vendor.availableQty || vendor.quantity || '',
+          price: vendor.price || '0'
+        })
+      });
+      
+      if (response.ok) {
+        setRfqStatus(prev => ({ ...prev, [rfqKey]: 'sent' }));
+        alert(`✅ RFQ Sent Successfully!\n\nMatch ID: ${vendor.matchID}\nTo: ${vendor.name}\nContact: ${vendor.contact}\n\nProduct: ${vendor.product}\nModel: ${vendor.model}\nQuantity: ${vendor.quantity}`);
+        
+        setTimeout(() => {
+          setRfqStatus(prev => ({ ...prev, [rfqKey]: null }));
+        }, 3000);
+      } else {
+        throw new Error('Failed to send RFQ');
+      }
+    } catch (error) {
+      console.error('Error sending RFQ:', error);
+      alert('❌ Failed to send RFQ. Please try again.');
+      setRfqStatus(prev => ({ ...prev, [rfqKey]: null }));
+    }
+  };
 
   const handleViewVendorResponse = (vendor) => {
     const vendorResponse = {
@@ -601,7 +683,8 @@ const sendRFQ = async (vendor, rfqKey) => {
           model: cellValue(row, 'Model_Needed'),
           quantity,
           customerEmail: cellValue(row, 'Customer_Email') || cellValue(row, 'Email_Address'),
-          customerAddress: cellValue(row, 'Customer_Address')
+          customerAddress: cellValue(row, 'Customer_Address'),
+          customerWhatsapp: cellValue(row, 'Whatsapp_Number')
         };
       }
       
@@ -616,24 +699,24 @@ const sendRFQ = async (vendor, rfqKey) => {
         );
         
         if (!vendorExists) {
-         groups[groupKey].vendors.push({
-  name: buyer1Name,
-  contact: buyer1Contact,
-  email: cellValue(row, 'Potential Buyer 1 email id'),
-  itemDescription: cellValue(row, 'Vendor_Item_Found') || 'N/A',
-  quantity: cellValue(row, 'Vendor_Available_Qty') || '0',  // ❌ WRONG FIELD NAME
-  availableQty: cellValue(row, 'Vendor_Available_Qty') || '0',  // ✅ ADD THIS
-  uqc: cellValue(row, 'UQC') || '',
-  price: cellValue(row, 'Vendor_Price') || '0',
-  matchID: matchID,
-  originalRow: row,
-  customerName,
-  product,
-  model: cellValue(row, 'Model_Needed'),
-  quantity: cellValue(row, 'Qty_Needed'),  // Customer quantity
-  customerEmail: cellValue(row, 'Customer_Email') || cellValue(row, 'Email_Address'),
-  customerAddress: cellValue(row, 'Customer_Address')
-});
+          groups[groupKey].vendors.push({
+            name: buyer1Name,
+            contact: buyer1Contact,
+            email: cellValue(row, 'Potential Buyer 1 email id'),
+            itemDescription: cellValue(row, 'Vendor_Item_Found') || 'N/A',
+            availableQty: cellValue(row, 'Vendor_Available_Qty') || '0',
+            uqc: cellValue(row, 'UQC') || '',
+            price: cellValue(row, 'Vendor_Price') || '0',
+            matchID: matchID,
+            originalRow: row,
+            customerName,
+            product,
+            model: cellValue(row, 'Model_Needed'),
+            quantity: cellValue(row, 'Qty_Needed'),
+            customerEmail: cellValue(row, 'Customer_Email') || cellValue(row, 'Email_Address'),
+            customerAddress: cellValue(row, 'Customer_Address'),
+            customerWhatsapp: cellValue(row, 'Whatsapp_Number')
+          });
         }
       }
     });
@@ -653,9 +736,29 @@ const sendRFQ = async (vendor, rfqKey) => {
     )
   );
 
+  const totalPages = Math.ceil(filteredVendor.length / ITEMS_PER_PAGE);
+  const paginatedVendor = filteredVendor.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const getRFQStatusForGroup = (vendors) => {
+    const totalVendors = vendors.length;
+    const respondedVendors = vendors.filter(v => 
+      v.originalRow?.['vendor Product_available'] || v.originalRow?.['Vendor Price']
+    ).length;
+    return { total: totalVendors, responded: respondedVendors };
+  };
+
   const matchingPrimaryCols = [
     'Match_ID',
     'Customer_Name',
+    'Whatsapp_Number',
     'Product_Needed',
     'Qty_Needed',
     'RFQ Status'
@@ -706,7 +809,6 @@ const sendRFQ = async (vendor, rfqKey) => {
 
   return (
     <div className="flex flex-col lg:flex-row h-screen bg-gradient-to-br from-indigo-50 via-white to-indigo-100 overflow-hidden">
-      {/* Sidebar */}
       <aside className="w-full lg:w-72 bg-white border-b lg:border-r lg:border-b-0 border-indigo-100 flex-shrink-0 shadow-lg">
         <div className="p-4 border-b border-indigo-100">
           <div className="flex items-center">
@@ -725,6 +827,7 @@ const sendRFQ = async (vendor, rfqKey) => {
             onClick={() => {
               setActiveTab('matching');
               setSearchTerm('');
+              setCurrentPage(1);
             }}
             className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all font-semibold text-sm ${
               activeTab === 'matching'
@@ -747,6 +850,7 @@ const sendRFQ = async (vendor, rfqKey) => {
             onClick={() => {
               setActiveTab('vendor');
               setSearchTerm('');
+              setCurrentPage(1);
             }}
             className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all font-semibold text-sm ${
               activeTab === 'vendor'
@@ -767,7 +871,6 @@ const sendRFQ = async (vendor, rfqKey) => {
         </nav>
       </aside>
 
-      {/* Main Content */}
       <main className="flex-1 flex flex-col overflow-hidden">
         <div className="p-3 bg-white border-b border-indigo-100">
           <div className="relative max-w-2xl mx-auto">
@@ -776,7 +879,10 @@ const sendRFQ = async (vendor, rfqKey) => {
               type="text"
               placeholder={`Search in ${activeTab === 'matching' ? 'Matching' : 'Vendor'} Sheet...`}
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1);
+              }}
               className="w-full pl-10 pr-4 py-2 border-2 border-indigo-100 rounded-lg text-sm focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 outline-none"
             />
           </div>
@@ -785,7 +891,7 @@ const sendRFQ = async (vendor, rfqKey) => {
         {activeTab === 'matching' ? (
           <div className="flex-1 overflow-auto p-3">
             <div className="bg-white rounded-xl shadow-xl border border-indigo-100 h-full flex flex-col">
-              <div className="bg-gradient-to-r from-indigo-500 rounded  to-indigo-600 px-4 py-3 text-white">
+              <div className="bg-gradient-to-r from-indigo-500 to-indigo-600 px-4 py-3 text-white rounded-t-xl">
                 <h2 className="text-base font-bold">Matching Sheet Data</h2>
                 <p className="text-indigo-100 text-xs mt-1">View vendors and send RFQ via WhatsApp</p>
               </div>
@@ -809,6 +915,7 @@ const sendRFQ = async (vendor, rfqKey) => {
                       const isExpanded = expandedRow === idx;
                       const rowKey = `row-${idx}`;
                       const selectedVendorsForRow = selectedVendors[rowKey] || [];
+                      const rfqStats = getRFQStatusForGroup(matchingVendors);
                       
                       return (
                         <React.Fragment key={idx}>
@@ -818,7 +925,31 @@ const sendRFQ = async (vendor, rfqKey) => {
                             {matchingPrimaryCols.map(col => (
                               <td key={col} className="px-2 py-2 text-[11px] text-gray-800 whitespace-nowrap">
                                 <div className="max-w-[120px] truncate" title={cellValue(row, col)}>
-                                  {cellValue(row, col) || '—'}
+                                  {col === 'RFQ Status' && matchingVendors.length > 0 ? (
+                                    <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold ${
+                                      rfqStats.responded === rfqStats.total 
+                                        ? 'bg-green-100 text-green-700 ring-2 ring-green-400' 
+                                        : rfqStats.responded > 0 
+                                        ? 'bg-yellow-100 text-yellow-700 ring-2 ring-yellow-400' 
+                                        : 'bg-gray-100 text-gray-600'
+                                    }`}>
+                                      {rfqStats.responded === rfqStats.total ? (
+                                        <CheckCircle className="w-3 h-3" />
+                                      ) : rfqStats.responded > 0 ? (
+                                        <Clock className="w-3 h-3 animate-pulse" />
+                                      ) : (
+                                        <AlertCircle className="w-3 h-3" />
+                                      )}
+                                      {rfqStats.responded}/{rfqStats.total}
+                                    </div>
+                                  ) : col === 'Whatsapp_Number' ? (
+                                    <div className="flex items-center gap-1">
+                                      <Phone className="w-3 h-3 text-green-600" />
+                                      <span>{cellValue(row, col) || '—'}</span>
+                                    </div>
+                                  ) : (
+                                    cellValue(row, col) || '—'
+                                  )}
                                 </div>
                               </td>
                             ))}
@@ -826,7 +957,7 @@ const sendRFQ = async (vendor, rfqKey) => {
                               <div className="flex items-center gap-1 flex-wrap">
                                 <button
                                   onClick={() => setExpandedRow(isExpanded ? null : idx)}
-                                  className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all whitespace-nowrap ${
+                                  className={`min-w-[100px] px-2 py-1 rounded-lg text-[10px] font-bold transition-all whitespace-nowrap ${
                                     matchingVendors.length > 0 
                                       ? 'bg-green-600 hover:bg-green-700 text-white shadow-md' 
                                       : 'bg-gray-300 text-gray-500 cursor-not-allowed'
@@ -842,6 +973,7 @@ const sendRFQ = async (vendor, rfqKey) => {
                                     customerName: group.customerName,
                                     customerEmail: group.customerEmail,
                                     customerAddress: group.customerAddress,
+                                    customerWhatsapp: group.customerWhatsapp,
                                     product: group.product,
                                     model: group.model,
                                     qtyNeeded: group.quantity,
@@ -852,7 +984,7 @@ const sendRFQ = async (vendor, rfqKey) => {
                                     vendorPrice: cellValue(row, 'Vendor_Price'),
                                     matchingVendors: matchingVendors
                                   })}
-                                  className="px-2 py-1 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-[10px] font-bold flex items-center gap-1 whitespace-nowrap"
+                                  className="min-w-[100px] px-2 py-1 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-[10px] font-bold flex items-center justify-center gap-1 whitespace-nowrap"
                                 >
                                   <Eye className="w-3 h-3" />
                                   Details
@@ -868,7 +1000,16 @@ const sendRFQ = async (vendor, rfqKey) => {
                                   <div className="flex items-center justify-between mb-3">
                                     <h4 className="text-xs font-bold text-indigo-800 flex items-center">
                                       <Package className="w-3 h-3 mr-2" />
-                                      Matched Vendors ({matchingVendors.length}) - Select & Send RFQ
+                                      Matched Vendors ({matchingVendors.length}) - 
+                                      <span className={`ml-2 px-2 py-0.5 rounded-full text-[10px] ${
+                                        rfqStats.responded === rfqStats.total 
+                                          ? 'bg-green-100 text-green-700 ring-2 ring-green-400' 
+                                          : rfqStats.responded > 0 
+                                          ? 'bg-yellow-100 text-yellow-700 ring-2 ring-yellow-400 animate-pulse' 
+                                          : 'bg-gray-100 text-gray-600'
+                                      }`}>
+                                        {rfqStats.responded === rfqStats.total ? '✓ ' : ''}Responses: {rfqStats.responded}/{rfqStats.total}
+                                      </span>
                                     </h4>
                                     <div className="flex gap-2">
                                       <button
@@ -943,9 +1084,9 @@ const sendRFQ = async (vendor, rfqKey) => {
             </div>
           </div>
         ) : (
-          <div className="flex-1 overflow-auto p-3">
-            <div className="bg-white rounded-xl shadow-xl border border-indigo-100 h-full flex flex-col">
-              <div className="bg-gradient-to-r rounded from-green-500 to-green-600 px-4 py-3 text-white">
+          <div className="flex-1 overflow-auto p-3 flex flex-col">
+            <div className="bg-white rounded-xl shadow-xl border border-indigo-100 flex-1 flex flex-col">
+              <div className="bg-gradient-to-r from-green-500 to-green-600 px-4 py-3 text-white rounded-t-xl">
                 <h2 className="text-base font-bold">Vendor Sheet Data</h2>
                 <p className="text-green-100 text-xs mt-1">View all vendor information</p>
               </div>
@@ -962,7 +1103,7 @@ const sendRFQ = async (vendor, rfqKey) => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {filteredVendor.map((row, idx) => (
+                    {paginatedVendor.map((row, idx) => (
                       <tr key={idx} className="hover:bg-green-50 transition-colors">
                         {vendorPrimaryCols.map(col => (
                           <td key={col} className="px-2 py-2 text-[11px] text-gray-800">
@@ -984,12 +1125,21 @@ const sendRFQ = async (vendor, rfqKey) => {
                   </div>
                 )}
               </div>
+
+              {filteredVendor.length > 0 && (
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={handlePageChange}
+                  itemsPerPage={ITEMS_PER_PAGE}
+                  totalItems={filteredVendor.length}
+                />
+              )}
             </div>
           </div>
         )}
       </main>
 
-      {/* Customer Details Modal */}
       {selectedBuyer && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 backdrop-blur-sm">
           <div className="relative max-w-4xl w-full bg-white rounded-2xl shadow-2xl border-2 border-indigo-200 overflow-hidden max-h-[90vh] flex flex-col">
@@ -1015,11 +1165,18 @@ const sendRFQ = async (vendor, rfqKey) => {
                   <div className="text-xs text-indigo-700 font-bold mb-2">Customer Name</div>
                   <div className="text-sm font-semibold text-gray-900">{selectedBuyer.customerName}</div>
                 </div>
+                <div className="p-4 bg-green-50 rounded-xl border-2 border-green-300">
+                  <div className="text-xs text-green-700 font-bold mb-2 flex items-center">
+                    <Phone className="w-3 h-3 mr-1" />
+                    WhatsApp Number
+                  </div>
+                  <div className="text-sm font-semibold text-gray-900">{selectedBuyer.customerWhatsapp || '—'}</div>
+                </div>
                 <div className="p-4 bg-indigo-50 rounded-xl border border-indigo-200">
                   <div className="text-xs text-indigo-700 font-bold mb-2">Email</div>
                   <div className="text-sm font-semibold text-gray-900 break-all">{selectedBuyer.customerEmail}</div>
                 </div>
-                <div className="p-4 bg-indigo-50 rounded-xl border border-indigo-200">
+                <div className="p-4 bg-indigo-50 rounded-xl border border-indigo-200 md:col-span-2">
                   <div className="text-xs text-indigo-700 font-bold mb-2">Address</div>
                   <div className="text-sm font-semibold text-gray-900">{selectedBuyer.customerAddress || '—'}</div>
                 </div>
@@ -1074,7 +1231,6 @@ const sendRFQ = async (vendor, rfqKey) => {
         </div>
       )}
 
-      {/* Vendor Response Modal */}
       <VendorResponseModal
         isOpen={vendorResponseModal.isOpen}
         onClose={() => setVendorResponseModal({ isOpen: false, data: null, matchData: null })}
