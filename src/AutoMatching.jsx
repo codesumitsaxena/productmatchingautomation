@@ -726,7 +726,7 @@ const VendorMatchManager = () => {
 
   useEffect(() => {
     fetchSheetData();
-    const interval = setInterval(fetchSheetData, 30000);
+    const interval = setInterval(fetchSheetData, 3880000);
     return () => clearInterval(interval);
   }, []);
 
@@ -1161,7 +1161,7 @@ const VendorMatchManager = () => {
               <Package className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-lg font-bold text-gray-900">Product Matching</h1>
+              <h1 className="text-lg font-bold text-gray-900">OPT2Deal</h1>
               <p className="text-xs text-gray-500">Vendor Management</p>
             </div>
           </div>
