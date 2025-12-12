@@ -1,10 +1,8 @@
-// src/VendorCRMView.js
 import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Package, X, Mail, User, Phone, Users, Filter, Upload, RefreshCw } from 'lucide-react';
 import CONFIG from './AppConfig';
 import { safeValue, getFieldValue } from './sharedUtils';
 
-// --- Sub Component: VendorCRMDetailsModal ---
 
 const VendorCRMDetailsModal = React.memo(({ selectedVendor, onClose }) => {
   if (!selectedVendor) return null;

@@ -1,8 +1,4 @@
-// src/AppConfig.js
 
-/**
- * 💻 ENVIRONMENT CONFIGURATION
- */
 const CONFIG = {
     // New API URL for matching data
     MATCHING_API_URL: window.ENV?.VITE_MATCHING_API_URL || 'https://opt2dealapi.opt2deal.com/api/matching/customer-requests/all',

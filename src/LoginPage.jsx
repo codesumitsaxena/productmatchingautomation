@@ -1,8 +1,6 @@
-// src/LoginPage.js
 import React, { useState } from 'react';
 import { Package, Mail, Lock } from 'lucide-react';
 
-// FIX: Added onLoginSuccess prop
 const LoginPage = ({ onLoginSuccess }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -35,7 +33,6 @@ const LoginPage = ({ onLoginSuccess }) => {
       }
       setLoading(false);
     }, 1500);
-    // ----------------------------------------------------
   };
 
   return (
